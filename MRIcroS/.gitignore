@@ -1,0 +1,8 @@
+sample_trk_files/
+
+.DS_Store
+
+#vim temp files
+*.swp
+#matlab tmp files
+*.m~
