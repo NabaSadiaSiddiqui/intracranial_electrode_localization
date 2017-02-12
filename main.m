@@ -1,7 +1,7 @@
 
 h_figure_whole = figure('MenuBar', 'none', 'Color', 'white');
 % Create frame object that represents NeuroImaging window
-h_frame_left = uicontrol('style', 'frame', 'units', 'normalized', 'position', [0 0.3 0.5 1]);
+%h_frame_left = uicontrol('style', 'frame', 'units', 'normalized', 'position', [0 0.3 0.5 1]);
 
 % Create frame object that represents electrode editing controls
 h_frame_right = uicontrol('style', 'frame', 'units', 'normalized', 'position', [0.5 0 1 1]);
