@@ -37,19 +37,20 @@ function create_electrode_drop_down(dim_x, dim_y)
 end
 
 function create_grid( dim_x, dim_y )
+    global ax_grid;
     % Delete current axis. This is for cases when you want to create a new
     % new grid of electrodes, and remove existing grid that is already
     % drawn
-    delete(gca);
+    delete(ax_grid);
     % Create grid
     % xtick = [] and ytick = [] turns off labels
-    axes('position', [0.15 0.05 0.2 0.2],'box','off', 'xtick', [], 'ytick', []);
+    ax_grid = axes('position', [0.15 0.05 0.2 0.2],'box','off', 'xtick', [], 'ytick', []);
     x = linspace(1, dim_x, dim_x);
     y = linspace(1, dim_y, dim_y);
     [X, Y] = meshgrid(y,x);
     plot(X, Y, '-dr');
     % Remove axes border
-    set(gca,'Visible','off')
+    set(ax_grid,'Visible','off')
 end
 
 function setup_electrode_grid(h_grid_dim_x, h_grid_dim_y)

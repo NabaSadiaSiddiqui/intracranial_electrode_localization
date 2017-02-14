@@ -43,4 +43,18 @@ function get_coord(h, e)
     % --- Get index of the clicked point
     [~, i] = min((e.IntersectionPoint(1)-x).^2 + (e.IntersectionPoint(2)-y).^2);
     disp(strcat('(', num2str(x(i)), ',', num2str(y(i)), ')'));
+    
+    global electrode_drop_down;
+    selected_index = electrode_drop_down.Value;
+    selected_value = electrode_drop_down.String(selected_index,:);
+    x_and_y = char(strsplit(selected_value, ','));
+    x = str2num(x_and_y(1, 2:end));
+    y = str2num(x_and_y(2, 1:end-1));
+    global ax_grid;
+    axes(ax_grid);
+    hold on;
+    plot(y, x, '-ob');
+    hold off;
 end
+
+
