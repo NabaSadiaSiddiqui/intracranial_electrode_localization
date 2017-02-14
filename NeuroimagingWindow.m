@@ -44,6 +44,11 @@ function get_coord(h, e)
     [~, i] = min((e.IntersectionPoint(1)-x).^2 + (e.IntersectionPoint(2)-y).^2);
     disp(strcat('(', num2str(x(i)), ',', num2str(y(i)), ')'));
     
+    x(i) = [];
+    y(i) = [];
+    set(h, 'XData', x);
+    set(h, 'YData', y);
+    
     update_grid();
 end
 
