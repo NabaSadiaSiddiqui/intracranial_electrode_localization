@@ -44,6 +44,10 @@ function get_coord(h, e)
     [~, i] = min((e.IntersectionPoint(1)-x).^2 + (e.IntersectionPoint(2)-y).^2);
     disp(strcat('(', num2str(x(i)), ',', num2str(y(i)), ')'));
     
+    update_grid();
+end
+
+function update_grid
     global electrode_drop_down;
     selected_index = electrode_drop_down.Value;
     selected_value = electrode_drop_down.String(selected_index,:);
