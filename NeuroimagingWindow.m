@@ -14,19 +14,42 @@ classdef NeuroimagingWindow
             
             x1 = linspace(1, 5, 5);
             y1 = 5 * ones(1,5);            
-            scatter(x1, y1, sz, 'filled', 'g', 'ButtonDownFcn', @get_coord);            
 
             x2 = linspace(3, 6, 4);
-            y2 = 8 * ones(1,4);
-            scatter(x2, y2, sz, 'filled', 'm', 'ButtonDownFcn', @get_coord);
-            y2 = 9 * ones(1,4);
-            scatter(x2, y2, sz, 'filled', 'm', 'ButtonDownFcn', @get_coord);
-            y2 = 10 * ones(1,4);
-            scatter(x2, y2, sz, 'filled', 'm', 'ButtonDownFcn', @get_coord);
-            y2 = 11 * ones(1,4);
-            scatter(x2, y2, sz, 'filled', 'm', 'ButtonDownFcn', @get_coord);
-            y2 = 12 * ones(1,4);
-            scatter(x2, y2, sz, 'filled', 'm', 'ButtonDownFcn', @get_coord);
+            y2_a = 8 * ones(1,4);
+            y2_b = 9 * ones(1,4);
+            y2_c = 10 * ones(1,4);
+            y2_d = 11 * ones(1,4);
+            y2_e = 12 * ones(1,4);
+            
+            xLimits = [];
+            xLimits(1) = min(x1);
+            xLimits(2) = max(x1);
+            xLimits(3) = min(x2);
+            xLimits(4) = max(x2);
+            yLimits = [];
+            yLimits(1) = min(y1);
+            yLimits(2) = max(y1);
+            yLimits(3) = min(y2_a);
+            yLimits(4) = max(y2_a);
+            yLimits(5) = min(y2_b);
+            yLimits(6) = max(y2_b);
+            yLimits(7) = min(y2_c);
+            yLimits(8) = max(y2_c);
+            yLimits(9) = min(y2_d);
+            yLimits(10) = max(y2_d);
+            yLimits(11) = min(y2_e);
+            yLimits(12) = max(y2_e);
+            
+            xlim([0 max(xLimits)+1]);
+            ylim([0 max(yLimits)+1]);
+            
+            scatter(x1, y1, sz, 'filled', 'g', 'ButtonDownFcn', @get_coord);            
+            scatter(x2, y2_a, sz, 'filled', 'm', 'ButtonDownFcn', @get_coord);
+            scatter(x2, y2_b, sz, 'filled', 'm', 'ButtonDownFcn', @get_coord);
+            scatter(x2, y2_c, sz, 'filled', 'm', 'ButtonDownFcn', @get_coord);
+            scatter(x2, y2_d, sz, 'filled', 'm', 'ButtonDownFcn', @get_coord);
+            scatter(x2, y2_e, sz, 'filled', 'm', 'ButtonDownFcn', @get_coord);
             
             hold off;            
         end
