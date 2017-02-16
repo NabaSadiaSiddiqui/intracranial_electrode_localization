@@ -20,7 +20,7 @@ function refloatPanels(src, ~)
     p_fig = getpixelposition(v.hMainFigure);
     setpixelposition(v.hFigurePanel, [0, 0, p_fig(3:4)] - [ 0, 0, v.hUtilPanelMargins ]);
     setpixelposition(v.hFigureUtilPanel, [ p_fig(3) - v.hUtilPanelMargins(1), 0,  p_fig(3:4)]);
-    setpixelposition(v.ax_grid, [ 0, p_fig(4) - v.hUtilPanelMargins(2), p_fig(3) - v.hUtilPanelMargins(1), v.hUtilPanelMargins(2)]);
+    setpixelposition(v.ax_grid, [ 0, p_fig(4) - v.hUtilPanelMargins(2), p_fig(3:4) - [v.hUtilPanelMargins(1), 0]]);
 end
 v.hAxes = axes('Parent', v.hFigurePanel,'HandleVisibility','on','Units', 'normalized','Position',[0.0 0.0 1 1]); %important: turn ON visibility
 
@@ -42,7 +42,7 @@ v.h_edit_grid_dimensions_x =  uicontrol('Units', 'normalized', 'Parent', v.hFigu
 v.h_edit_grid_dimensions_y =  uicontrol('Units', 'normalized', 'Parent', v.hFigureUtilPanel, 'style','edit', 'position',[0.26 0.65 0.09 0.1], 'string','8');
 v.h_push_button_grid_dimensions = uicontrol('Units', 'normalized', 'Parent', v.hFigureUtilPanel, 'style', 'pushbutton', 'position', [0.35 0.65 0.15 0.1], 'string', 'Update Grid', 'callback', {@setup_electrode_grid_callback, v.h_edit_grid_dimensions_x, v.h_edit_grid_dimensions_y});
 
-v.ax_grid = axes('position', [0.15 0 0.2 0.2],'box','off', 'xtick', [], 'ytick', []);
+v.ax_grid = axes('position', [0.15 0.05 0.2 0.2],'box','off', 'xtick', [], 'ytick', []);
 % Remove axes border
 set(v.ax_grid,'Visible','off');
     
@@ -75,7 +75,7 @@ function create_grid( src, ~, dim_x, dim_y )
     x = linspace(1, dim_x, dim_x);
     y = linspace(1, dim_y, dim_y);
     [X, Y] = meshgrid(y,x);
-    plot(v.ax_grid, X, Y, '-dr');
+    plot(v.ax_Grid,X, Y, '-dr');
 end
 
 function setup_electrode_grid(src, ev, h_grid_dim_x, h_grid_dim_y)
