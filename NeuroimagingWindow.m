@@ -82,8 +82,7 @@ function update_grid(handle_grid)
     x_and_y = char(strsplit(selected_value, ','));
     x = str2num(x_and_y(1, 2:end));
     y = str2num(x_and_y(2, 1:end-1));
-    global ax_grid;
-    axes(ax_grid);
+    axes(handle_grid.GridAxes);
     hold on;
     plot(y, x, '-ob');
     hold off;
