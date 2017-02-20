@@ -6,6 +6,8 @@ classdef Grid < handle
         GridDimensionsX;
         GridDimensionsY;
         GridName;
+        GridElectrodeDropdown;
+        GridMarkedElectrodes = [];
     end
     
     methods
@@ -36,35 +38,45 @@ classdef Grid < handle
             obj.GridName = value;
         end
         
+        function set.GridElectrodeDropdown(obj, value)
+            obj.GridElectrodeDropdown = value;
+        end
+        
+        function set.GridMarkedElectrodes(obj, value)
+            obj.GridMarkedElectrodes = value;
+        end
+        
         function setup_electrode_grid(obj)
             grid_dim_x = str2num(obj.GridDimensionsX.String);
             grid_dim_y = str2num(obj.GridDimensionsY.String);
-            create_electrode_drop_down(grid_dim_x, grid_dim_y);
+            obj.create_electrode_drop_down(grid_dim_x, grid_dim_y);
             create_grid(grid_dim_x, grid_dim_y);
         end
         
         function setup_electrode_grid_callback(obj, src, event)
             obj.setup_electrode_grid();
         end
-    end
-    
-end
+        
+        function create_electrode_drop_down(obj, dim_x, dim_y)
+            % Drop down list to select electrodes
+            options = '';
+            for x = linspace(1, dim_x, dim_x)
+                for y = linspace(1, dim_y, dim_y)
+                    option = strcat('(', num2str(x), ',', num2str(y), ')');
+                    options = strcat(options, '|', option);
+                end
+            end
+            options = options(2:end);
 
-function create_electrode_drop_down(dim_x, dim_y)
-    global electrode_drop_down;
-    
-    % Drop down list to select electrodes
-    options = '';
-    for x = linspace(1, dim_x, dim_x)
-        for y = linspace(1, dim_y, dim_y)
-            option = strcat('(', num2str(x), ',', num2str(y), ')');
-            options = strcat(options, '|', option);
+            uicontrol('style','text', 'units','normalized', 'position',[0.505 0.55 0.15 0.05], 'string', 'Pick an electrode');
+            obj.GridElectrodeDropdown = uicontrol('style','popup', 'units','normalized', 'position',[0.505 0.5 0.495 0.05], 'string', options);
+        end
+        
+        function add_marked_electrode(obj, electrode)
+            obj.GridMarkedElectrodes = [obj.GridMarkedElectrodes, electrode];
         end
     end
-    options = options(2:end);
     
-    uicontrol('style','text', 'units','normalized', 'position',[0.505 0.55 0.15 0.05], 'string', 'Pick an electrode');
-    electrode_drop_down = uicontrol('style','popup', 'units','normalized', 'position',[0.505 0.5 0.495 0.05], 'string', options);
 end
 
 function create_grid( dim_x, dim_y )

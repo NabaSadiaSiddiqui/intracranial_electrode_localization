@@ -6,7 +6,7 @@ classdef NeuroimagingWindow
     end
     
     methods (Static)
-        function mock_2D_window
+        function mock_2D_window(handle_grid)
             axes('position', [0.1 0.5 0.3 0.3]);
             hold on;
 
@@ -44,12 +44,12 @@ classdef NeuroimagingWindow
             xlim([0 max(xLimits)+1]);
             ylim([0 max(yLimits)+1]);
             
-            scatter(x1, y1, sz, 'filled', 'g', 'ButtonDownFcn', @get_coord);            
-            scatter(x2, y2_a, sz, 'filled', 'm', 'ButtonDownFcn', @get_coord);
-            scatter(x2, y2_b, sz, 'filled', 'm', 'ButtonDownFcn', @get_coord);
-            scatter(x2, y2_c, sz, 'filled', 'm', 'ButtonDownFcn', @get_coord);
-            scatter(x2, y2_d, sz, 'filled', 'm', 'ButtonDownFcn', @get_coord);
-            scatter(x2, y2_e, sz, 'filled', 'm', 'ButtonDownFcn', @get_coord);
+            scatter(x1, y1, sz, 'filled', 'g', 'ButtonDownFcn', {@get_coord, handle_grid});            
+            scatter(x2, y2_a, sz, 'filled', 'm', 'ButtonDownFcn', {@get_coord, handle_grid});
+            scatter(x2, y2_b, sz, 'filled', 'm', 'ButtonDownFcn', {@get_coord, handle_grid});
+            scatter(x2, y2_c, sz, 'filled', 'm', 'ButtonDownFcn', {@get_coord, handle_grid});
+            scatter(x2, y2_d, sz, 'filled', 'm', 'ButtonDownFcn', {@get_coord, handle_grid});
+            scatter(x2, y2_e, sz, 'filled', 'm', 'ButtonDownFcn', {@get_coord, handle_grid});
             
             hold off;            
         end
@@ -57,7 +57,7 @@ classdef NeuroimagingWindow
     
 end
 
-function get_coord(h, e)
+function get_coord(h, e, handle_grid)
 
     % --- Get coordinates
     x = get(h, 'XData');
@@ -72,11 +72,11 @@ function get_coord(h, e)
     set(h, 'XData', x);
     set(h, 'YData', y);
     
-    update_grid();
+    update_grid(handle_grid);
 end
 
-function update_grid
-    global electrode_drop_down;
+function update_grid(handle_grid)
+    electrode_drop_down = handle_grid.GridElectrodeDropdown;
     selected_index = electrode_drop_down.Value;
     selected_value = electrode_drop_down.String(selected_index,:);
     x_and_y = char(strsplit(selected_value, ','));
@@ -87,6 +87,7 @@ function update_grid
     hold on;
     plot(y, x, '-ob');
     hold off;
+    handle_grid.add_marked_electrode(selected_value);
 end
 
 
