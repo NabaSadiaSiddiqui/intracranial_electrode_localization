@@ -15,13 +15,13 @@ classdef Grid < handle
         function obj = Grid
             uicontrol('style', 'frame', 'units', 'normalized', 'position', [0.5 0 1 1]);
             uicontrol('style','text', 'units','normalized', 'position',[0.505 0.85 0.15 0.09], 'string','Grid Properties');
-            uicontrol('style', 'frame', 'units', 'normalized', 'position', [0.51 0.64 0.49 0.25]);
+            uicontrol('style', 'frame', 'units', 'normalized', 'position', [0.51 0.64 0.485 0.25]);
             uicontrol('style','text', 'units','normalized', 'position',[0.52 0.75 0.1 0.1], 'string','Name:');
             h_grid_name = uicontrol('style','edit', 'units','normalized', 'position',[0.66 0.75 0.19 0.1], 'string','Grid X');
             uicontrol('style','text', 'units','normalized', 'position',[0.52 0.65 0.14 0.1], 'string','Dimensions:');
             h_grid_dim_x =  uicontrol('style','edit', 'units','normalized', 'position',[0.66 0.65 0.09 0.1], 'string','8');
             h_grid_dim_y =  uicontrol('style','edit', 'units','normalized', 'position',[0.76 0.65 0.09 0.1], 'string','8');
-            uicontrol('style', 'pushbutton', 'units','normalized', 'position', [0.85 0.65 0.15 0.1], 'string', 'Update Grid', 'callback', {@obj.setup_electrode_grid_callback});
+            uicontrol('style', 'pushbutton', 'units','normalized', 'position', [0.85 0.65 0.14 0.1], 'string', 'Update Grid', 'callback', {@obj.setup_electrode_grid_callback});
             obj.GridDimensionsX = h_grid_dim_x;
             obj.GridDimensionsY = h_grid_dim_y;
             obj.GridName = h_grid_name;
