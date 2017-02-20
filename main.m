@@ -1,4 +1,3 @@
-
 h_figure_whole = figure('MenuBar', 'none', 'Color', 'white');
 
 global grids;
@@ -12,8 +11,6 @@ h_menu = uimenu(h_figure_whole,'Label','Grid');
 menu_grid_add = uimenu(h_menu, 'Label', 'Add Grid', 'callback', {@new_grid});
 
 NeuroimagingWindow.mock_2D_window(h_grid);
-
-
 
 function new_grid(src, event, handles)
     global h_grid;
