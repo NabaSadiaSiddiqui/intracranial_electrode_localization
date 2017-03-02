@@ -9,6 +9,8 @@ classdef Grid < handle
         GridElectrodeDropdown;
         GridMarkedElectrodes = [];
         GridAxes;
+        GridDisabledElectrodes = [];
+        GridCurrElectrodeDisabled;
     end
     
     methods
@@ -51,6 +53,10 @@ classdef Grid < handle
             obj.GridAxes = value;
         end
         
+        function set.GridCurrElectrodeDisabled(obj, value)
+            obj.GridCurrElectrodeDisabled = value;
+        end
+        
         function setup_electrode_grid(obj)
             grid_dim_x = str2num(obj.GridDimensionsX.String);
             grid_dim_y = str2num(obj.GridDimensionsY.String);
@@ -75,6 +81,8 @@ classdef Grid < handle
 
             uicontrol('style','text', 'units','normalized', 'position',[0.505 0.55 0.15 0.05], 'string', 'Pick an electrode');
             obj.GridElectrodeDropdown = uicontrol('style','popup', 'units','normalized', 'position',[0.505 0.5 0.495 0.05], 'string', options);
+            uicontrol('style', 'text', 'units', 'normalized', 'position', [0.505 0.45 0.15 0.05], 'string', 'Disable electrode');
+            obj.GridCurrElectrodeDisabled = uicontrol('style','checkbox', 'units', 'normalized', 'position', [0.7 0.45 0.05 0.05], 'value', 0);
         end
         
         function create_grid(obj, dim_x, dim_y)
@@ -84,11 +92,15 @@ classdef Grid < handle
             delete(obj.GridAxes);
             % Create grid
             % xtick = [] and ytick = [] turns off labels
-            obj.GridAxes = axes('position', [0.15 0.05 0.2 0.2],'box','off', 'xtick', [], 'ytick', []);
-            x = linspace(1, dim_x, dim_x);
-            y = linspace(1, dim_y, dim_y);
-            [X, Y] = meshgrid(y,x);
-            plot(X, Y, '-dr');
+            obj.GridAxes = axes('position', [0.15 0.05 0.2 0.2]);
+            sz = 75;
+            hold on;
+            for x = linspace(1, dim_x, dim_x)
+                for y = linspace(1, dim_y, dim_y)
+                    scatter(x, y, sz, 'filled', 'g');
+                end
+            end
+            hold off;
             % Remove axes border
             set(obj.GridAxes,'Visible','off')
         end

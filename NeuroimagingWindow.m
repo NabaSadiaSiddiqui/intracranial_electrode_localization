@@ -82,9 +82,12 @@ function update_grid(handle_grid)
     x_and_y = char(strsplit(selected_value, ','));
     x = str2num(x_and_y(1, 2:end));
     y = str2num(x_and_y(2, 1:end-1));
+    row = y;
+    col = x;
     axes(handle_grid.GridAxes);
     hold on;
-    plot(y, x, '-ob');
+    sz = 75;
+    scatter(row, col, sz, 'filled', 'b');
     hold off;
     handle_grid.add_marked_electrode(selected_value);
 end
