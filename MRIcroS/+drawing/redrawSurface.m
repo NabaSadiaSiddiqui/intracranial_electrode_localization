@@ -62,7 +62,7 @@ end;
 
 markerCount = 0;
 if(isfield(v, 'markers'))
-    markerCount = length(v.markers);
+    markerCount = length(v.markers); % prod(size(v.controller.get_current_markers()));
 end
 v.markerPatches = zeros(markerCount, 1);
 for i = 1:markerCount

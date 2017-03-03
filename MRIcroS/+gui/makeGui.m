@@ -9,20 +9,79 @@ v.hMainFigure = figure('MenuBar','none','Toolbar','none','HandleVisibility','on'
     'Tag', mfilename,'Name', mfilename, 'NumberTitle','off', ...
  'Color', get(0, 'defaultuicontrolbackgroundcolor'));
 set(v.hMainFigure,'Renderer','OpenGL')
-v.hFigurePanel = uipanel();
-v.hFigureUtilPanel = uipanel();
-v.hUtilPanelMargins = [ 100, 100 ];
+v.hAxes = axes('HandleVisibility','on'); %important: turn ON visibility
+% Grid properties
+% v.h_text_grid =  uicontrol('style','text', 'string','Grid Properties', 'position',[0.005 0.85 0.15 0.09]);
+% % v.h_frame_grid = uicontrol('style', 'frame', 'position', [0.01 0.64 0.49 0.25]);
+% v.h_text_grid_name =  uicontrol('style','text', 'string','Name:', 'position',[0.02 0.75 0.1 0.1]);
+% v.h_edit_grid_name =  uicontrol('style','edit', 'string','Grid X', 'position',[0.16 0.75 0.19 0.1]);
+% v.h_text_grid_dimensions =  uicontrol('style','text', 'string','Dimensions:', 'position',[0.02 0.65 0.14 0.1]);
+v.h_edit_grid_dimensions_x =  uicontrol('style','edit');
+v.h_edit_grid_dimensions_y =  uicontrol('style','edit');
+v.h_grid_dropdown = uicontrol('style', 'popup');
+v.h_grid_name = uicontrol('style','edit', 'HorizontalAlignment', 'Left');
+% v.h_push_button_grid_dimensions = uicontrol('style', 'pushbutton', 'string', 'Update Grid', 'callback', {@setup_electrode_grid_callback, v.h_edit_grid_dimensions_x, v.h_edit_grid_dimensions_y}, 'position', [0.35 0.65 0.15 0.1]);
+
+v.ax_grid = axes('box','off', 'xtick', [], 'ytick', [], 'Visible', 'off');
+
+% uicontrol('style','text', 'position',[0.005 0.55 0.15 0.05], 'string', 'Pick an electrode');
+% v.h_electrode_drop_down = uicontrol('style','popup');
+v.h_electrode_x = uicontrol('style', 'popup');
+v.h_electrode_y = uicontrol('style', 'popup');
+
+v.fFigurePanel = gui.FloatingControl(...
+    uipanel(), [ 0; 0 ], [[ -240, 1.0 ]; [ 0, 1.0 ]], [ ...
+        gui.FloatingControl(...
+            v.hAxes, zeros(2, 2), [[ 0, 1 ]; [ 0, 1 ]]...
+        ) ...
+    ]...
+);
+label_height = 16;
+input_height = 22;
+v.fFigureUtilPanel = gui.FloatingControl(uipanel(), ...
+    [ -240; 0.0 ], [[ 0, 1.0 ]; [ 0, 1.0 ]], [ ...
+        gui.FloatingControl(v.h_grid_dropdown, ...
+            [ 10; -25 ], [[ 0, 1.0 ]; [ label_height, 0.0 ] ]), ...
+        gui.FloatingControl(uicontrol('style','text', 'HorizontalAlignment', 'Left', 'string','Grid Properties'), ...
+            [ 10; -50 ], [[ 0, 1.0 ]; [ label_height, 0.0 ] ]), ...
+        gui.FloatingControl(uicontrol('style','text', 'HorizontalAlignment', 'Left', 'string','Name:'), ...
+            [ 25; -75 ], [ 35; label_height ]), ...
+        gui.FloatingControl(v.h_grid_name, ...
+            [ 100; -72 ], [[ -10, 1.0 ]; [ input_height, 0.0 ]]), ...
+        gui.FloatingControl(uicontrol('style','text', 'HorizontalAlignment', 'Left', 'string','Dimensions:'), ...
+            [ 25; -100 ], [ 60; label_height ]), ...
+        gui.FloatingControl(uipanel(), ...
+            [ 100; -97 ], [[ -10, 1.0 ]; [ input_height, 0.0 ]], [...
+                gui.FloatingControl(v.h_edit_grid_dimensions_x, ...
+                    [0; 0], [[ 0, 0.5 ]; [ 0, 1.0 ]]), ...
+                gui.FloatingControl(v.h_edit_grid_dimensions_y, ...
+                    [[ 0, 0.5 ]; [ 0, 0.0 ]], [[ 0, 1.0 ]; [ 0, 1.0 ]]) ...
+            ]), ...
+        gui.FloatingControl(uicontrol('style', 'pushbutton', 'string', 'Update Grid', 'callback', {@setup_electrode_grid_callback, v.h_edit_grid_dimensions_x, v.h_edit_grid_dimensions_y}),...
+            [ 100; -120 ], [[ -10, 1.0 ]; [ input_height, 0.0 ]]), ...
+        gui.FloatingControl(uicontrol('style', 'text', 'HorizontalAlignment', 'Left', 'string', 'Pick an electrode'), ...
+            [ 10; -140 ], [[ -10, 1.0 ]; [ input_height, 0.0 ]]), ...
+        gui.FloatingControl(uipanel(), ...
+            [ 10; -160 ], [[ -10, 1.0 ]; [ input_height, 0.0 ]], [...
+                gui.FloatingControl(v.h_electrode_x, ...
+                    [0; 0], [[ 0, 0.5 ]; [ 0, 1.0 ]]), ...
+                gui.FloatingControl(v.h_electrode_y, ...
+                    [[ 0, 0.5 ]; [ 0, 0.0 ]], [[ 0, 1.0 ]; [ 0, 1.0 ]]) ...
+            ]), ...
+        gui.FloatingControl(v.ax_grid, ...
+            [ 10; 10 ], [[ -10, 1.0 ]; [ 300, 0.0 ]])...
+    ]...
+);
 
 set(v.hMainFigure, 'ResizeFcn', @refloatPanels);
 
 function refloatPanels(src, ~)
     v = guidata(src);
-    p_fig = getpixelposition(v.hMainFigure);
-    setpixelposition(v.hFigurePanel, [0, 0, p_fig(3:4)] - [ 0, 0, v.hUtilPanelMargins ]);
-    setpixelposition(v.hFigureUtilPanel, [ p_fig(3) - v.hUtilPanelMargins(1), 0,  p_fig(3:4)]);
-    setpixelposition(v.ax_grid, [ 0, p_fig(4) - v.hUtilPanelMargins(2), p_fig(3) - v.hUtilPanelMargins(1), v.hUtilPanelMargins(2)]);
+    v.fFigurePanel.reposition(v.hMainFigure);
+    v.fFigureUtilPanel.reposition(v.hMainFigure);
 end
-v.hAxes = axes('Parent', v.hFigurePanel,'HandleVisibility','on','Units', 'normalized','Position',[0.0 0.0 1 1]); %important: turn ON visibility
+
+% [0.0 0.0 1 1]
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%% %
 % [Electrode selection window] %
@@ -32,39 +91,24 @@ v.hAxes = axes('Parent', v.hFigurePanel,'HandleVisibility','on','Units', 'normal
 %h_frame_left = uicontrol('style', 'frame', 'units', 'normalized', 'position', [0 0.3 0.5 1]);
 
 % Create frame object that represents electrode editing controls
-% Grid properties
-v.h_text_grid =  uicontrol('Units', 'normalized', 'Parent', v.hFigureUtilPanel, 'style','text', 'position',[0.005 0.85 0.15 0.09], 'string','Grid Properties');
-v.h_frame_grid = uicontrol('Units', 'normalized', 'Parent', v.hFigureUtilPanel, 'style', 'frame', 'position', [0.01 0.64 0.49 0.25]);
-v.h_text_grid_name =  uicontrol('Units', 'normalized', 'Parent', v.hFigureUtilPanel, 'style','text', 'position',[0.02 0.75 0.1 0.1], 'string','Name:');
-v.h_edit_grid_name =  uicontrol('Units', 'normalized', 'Parent', v.hFigureUtilPanel, 'style','edit', 'position',[0.16 0.75 0.19 0.1], 'string','Grid X');
-v.h_text_grid_dimensions =  uicontrol('Units', 'normalized', 'Parent', v.hFigureUtilPanel, 'style','text', 'position',[0.02 0.65 0.14 0.1], 'string','Dimensions:');
-v.h_edit_grid_dimensions_x =  uicontrol('Units', 'normalized', 'Parent', v.hFigureUtilPanel, 'style','edit', 'position',[0.16 0.65 0.09 0.1], 'string','8');
-v.h_edit_grid_dimensions_y =  uicontrol('Units', 'normalized', 'Parent', v.hFigureUtilPanel, 'style','edit', 'position',[0.26 0.65 0.09 0.1], 'string','8');
-v.h_push_button_grid_dimensions = uicontrol('Units', 'normalized', 'Parent', v.hFigureUtilPanel, 'style', 'pushbutton', 'position', [0.35 0.65 0.15 0.1], 'string', 'Update Grid', 'callback', {@setup_electrode_grid_callback, v.h_edit_grid_dimensions_x, v.h_edit_grid_dimensions_y});
 
-v.ax_grid = axes('position', [0.15 0 0.2 0.2],'box','off', 'xtick', [], 'ytick', []);
-% Remove axes border
-set(v.ax_grid,'Visible','off');
-    
-uicontrol('Units', 'normalized', 'Parent', v.hFigureUtilPanel, 'style','text', 'position',[0.005 0.55 0.15 0.05], 'string', 'Pick an electrode');
-v.h_electrode_drop_down = uicontrol('Units', 'normalized', 'Parent', v.hFigureUtilPanel, 'style','popup', 'position',[0.005 0.5 0.495 0.05]);
 
-% electrode.NeuroimagingWindow.mock_2D_window();
 
 function create_electrode_drop_down(src, ~, dim_x, dim_y)
     v = guidata(src);
     
-    % Drop down list to select electrodes
-    options = '';
-    for x = linspace(1, dim_x, dim_x)
-        for y = linspace(1, dim_y, dim_y)
-            option = strcat('(', num2str(x), ',', num2str(y), ')');
-            options = strcat(options, '|', option);
-        end
-    end
-    options = options(2:end);
+%     % Drop down list to select electrodes
+%     options = '';
+%     for x = linspace(1, dim_x, dim_x)
+%         for y = linspace(1, dim_y, dim_y)
+%             option = strcat('(', num2str(x), ',', num2str(y), ')');
+%             options = strcat(options, '|', option);
+%         end
+%     end
+%     options = options(2:end);
     
-    set(v.h_electrode_drop_down, 'string', options);
+    set(v.h_electrode_x, 'string', [1:dim_x]);
+    set(v.h_electrode_y, 'string', [1:dim_y]);
 end
 
 function create_grid( src, ~, dim_x, dim_y )
@@ -90,7 +134,8 @@ function setup_electrode_grid_callback(src, event, handle_x, handle_y)
     setup_electrode_grid(src, event, handle_x, handle_y)
 end
 
-v.controller = electrode.GeometryController();
+v.controller = electrode.GeometryController(v);
+v.controller.add_grid('Grid X', 8, 8);
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%% %
 % [/Electrode selection window] %
