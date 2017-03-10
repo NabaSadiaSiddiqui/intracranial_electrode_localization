@@ -11,6 +11,7 @@ classdef Grid < handle
         GridAxes;
         GridDisabledElectrodes = [];
         GridCurrElectrodeDisabled;
+        GridColor = [0, 0, 1];
     end
     
     methods
@@ -20,6 +21,7 @@ classdef Grid < handle
             uicontrol('style', 'frame', 'units', 'normalized', 'position', [0.51 0.64 0.485 0.25]);
             uicontrol('style','text', 'units','normalized', 'position',[0.52 0.75 0.1 0.1], 'string','Name:');
             h_grid_name = uicontrol('style','edit', 'units','normalized', 'position',[0.66 0.75 0.19 0.1], 'string','Grid X');
+            uicontrol('style', 'pushbutton', 'units', 'normalized', 'position', [0.85 0.75 0.14 0.1],'string','Color', 'callBack', {@obj.color_callback});
             uicontrol('style','text', 'units','normalized', 'position',[0.52 0.65 0.14 0.1], 'string','Dimensions:');
             h_grid_dim_x =  uicontrol('style','edit', 'units','normalized', 'position',[0.66 0.65 0.09 0.1], 'string','8');
             h_grid_dim_y =  uicontrol('style','edit', 'units','normalized', 'position',[0.76 0.65 0.09 0.1], 'string','8');
@@ -55,6 +57,10 @@ classdef Grid < handle
         
         function set.GridCurrElectrodeDisabled(obj, value)
             obj.GridCurrElectrodeDisabled = value;
+        end
+        
+        function set.GridColor(obj, value)
+            obj.GridColor = value;
         end
         
         function setup_electrode_grid(obj)
@@ -97,7 +103,8 @@ classdef Grid < handle
             hold on;
             for x = linspace(1, dim_x, dim_x)
                 for y = linspace(1, dim_y, dim_y)
-                    scatter(x, y, sz, 'filled', 'g');
+                    %scatter(x, y, sz, 'filled', obj.GridColor);
+                    scatter(x, y, sz, 'filled', 'r');
                 end
             end
             hold off;
@@ -108,7 +115,11 @@ classdef Grid < handle
         function add_marked_electrode(obj, electrode)
             obj.GridMarkedElectrodes = [obj.GridMarkedElectrodes, electrode];
         end
+        
+        function color_callback(obj, event, handls)
+          obj.GridColor = uisetcolor;
+          disp(obj.GridColor);
+        end
     end
-    
 end
 
