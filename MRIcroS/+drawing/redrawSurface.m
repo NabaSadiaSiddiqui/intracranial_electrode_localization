@@ -60,18 +60,18 @@ for i=1:surfaceCount
     end
 end;
 
-markerCount = 0;
-if(isfield(v, 'markers'))
-    markerCount = length(v.markers); % prod(size(v.controller.get_current_markers()));
-end
-v.markerPatches = zeros(markerCount, 1);
-for i = 1:markerCount
-    v.markerPatches(i) = patch('vertices', v.markers(i).vertices,...
-        'faces', v.markers(i).faces, 'facealpha',alph,...
-        'facecolor','red','facelighting','phong',...
-        'edgecolor','red','edgealpha', ea, ...
-        'BackFaceLighting',bf);
-end
+% markerCount = 0;
+% if(isfield(v, 'markers'))
+%     markerCount = length(v.markers); % prod(size(v.controller.get_current_markers()));
+% end
+% v.markerPatches = zeros(markerCount, 1);
+% for i = 1:markerCount
+%     v.markerPatches(i) = patch('vertices', v.markers(i).vertices,...
+%         'faces', v.markers(i).faces, 'facealpha',alph,...
+%         'facecolor','red','facelighting','phong',...
+%         'edgecolor','red','edgealpha', ea, ...
+%         'BackFaceLighting',bf);
+% end
 
 set(gca,'DataAspectRatio',[1 1 1])
 axis vis3d off; %tight

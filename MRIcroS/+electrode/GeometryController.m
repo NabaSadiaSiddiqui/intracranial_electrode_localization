@@ -4,7 +4,8 @@ classdef GeometryController < handle
     
     properties(Access = protected)
         grids = {}
-        v
+        selected = NaN(1, 2)
+        v_w
     end
     properties(Access = protected, Constant)
         ROTATE_SENSITIVITY = 0.7
@@ -13,17 +14,18 @@ classdef GeometryController < handle
     end
     
     methods(Access = public)
-        function obj = GeometryController(v)
-            obj.v = v; % shmeh...
+        function obj = GeometryController(v_w)
+            obj.v_w = v_w; % shmeh...
         end
         function [H, V] = get_linkages(varargin)
-            [idx, ~] = this.get_current_node();
+            [idx, ~, ~] = this.poll_inputs();
             H = this.grids{idx}.h_linkages;
             V = this.grids{idx}.v_linkages;
         end
         function add_grid(this, name, width, height)
+            this.unselect_last_selected();
             if ~isempty(this.grids)
-                [idx, ~] = this.get_current_node();
+                [idx, ~, ~] = this.poll_inputs();
                 grid_size = size(this.grids{idx}.markers);
                 
                 % hide the current grid
@@ -42,19 +44,53 @@ classdef GeometryController < handle
                 end
             end
             this.grids{length(this.grids) + 1} = electrode.Grid(name, width, height);
-            this.v.h_grid_dropdown.String = [ this.v.h_grid_dropdown.String, name ];
-            this.v.h_grid_name.String = name;
-            this.v.h_edit_grid_dimensions_x.String = width;
-            this.v.h_edit_grid_dimensions_y.String = height;
-            this.v.h_electrode_x.String = 1:width;
-            this.v.h_electrode_y.String = 1:height;
+            this.v_w.v.h_grid_dropdown.String = [ this.v_w.v.h_grid_dropdown.String, name ];
+            this.v_w.v.h_grid_name.String = name;
+            this.v_w.v.h_edit_grid_dimensions_x.String = width;
+            this.v_w.v.h_edit_grid_dimensions_y.String = height;
+            this.v_w.v.h_electrode_x.String = 1:width;
+            this.v_w.v.h_electrode_y.String = 1:height;
+        end
+        function select(this, coord)
+            [idx, ~, dims] = this.poll_inputs();
+            x = coord(1);
+            y = coord(2);
+            if 1 <= x && x <= dims(1) &&...
+               1 <= y && y <= dims(2)
+                this.unselect_last_selected();
+                
+                this.v_w.v.h_electrode_x.Value = x;
+                this.v_w.v.h_electrode_y.Value = y;
+                
+                if ~isempty(this.grids{idx}.markers{x, y})
+                    this.selected = coord;
+                
+                    set(this.grids{idx}.markers{x, y}.marker, ...
+                        'facecolor', 'cyan');
+                    set(this.grids{idx}.markers{x, y}.marker, ...
+                        'edgecolor', 'cyan');
+                end
+            end
+            % else % no-op
         end
     end
     methods(Access = protected)
+        function unselect_last_selected(this)
+            if ~any(isnan(this.selected))
+                [idx, ~, ~] = this.poll_inputs();
+                set(this.grids{idx}.markers{this.selected(1), this.selected(2)}.marker, ...
+                    'facecolor', 'red');
+                set(this.grids{idx}.markers{this.selected(1), this.selected(2)}.marker, ...
+                    'edgecolor', 'red');
+                
+                this.selected = NaN(1, 2);
+            end
+            % else % no-op
+        end
         function add_marker(this, marker, centroid, enabled)
-            [idx, C] = this.get_current_node();
+            [idx, C, ~] = this.poll_inputs();
             if ~isempty(this.grids{idx}.markers{C(1), C(2)})
-                delete(this.grids{idx}.markers{C(1), C(2)});
+                delete(this.grids{idx}.markers{C(1), C(2)}.marker);
             end
             this.grids{idx}.markers{C(1), C(2)} = ...
                 struct(...
@@ -63,6 +99,9 @@ classdef GeometryController < handle
                     'enabled', enabled,...
                     'color', this.next_color()...
             );
+            is_rotated = utils.Wrapper(false);
+            set(marker, 'ButtonDownFcn', { @this.marker_button_down, is_rotated, C });
+            this.select(C);
             cardinals = [[ 1 0 ]; [ -1 0 ]; [ 0 1 ]; [ 0 -1 ]];
             for i = 1:length(cardinals)
                 target = C + cardinals(i, :);
@@ -70,20 +109,31 @@ classdef GeometryController < handle
                    ~isempty(this.grids{idx}.markers{target(1), target(2)})
                     h_cylinder = this.cylinder_to_linkage(...
                         centroid, this.grids{idx}.markers{target(1), target(2)}.centroid, 1.0);
-                    linkage_idx = C - poslin(-cardinals(i));
+                    linkage_idx = C - poslin(-cardinals(i, :));
                     if cardinals(i, 1) ~= 0
+                        fprintf('H: %d %d\n', linkage_idx(1), linkage_idx(2));
+                        if ~isnan(this.grids{idx}.h_linkages(linkage_idx(1), linkage_idx(2)))
+                            delete(this.grids{idx}.h_linkages(linkage_idx(1), linkage_idx(2)));
+                        end
                         this.grids{idx}.h_linkages(linkage_idx(1), linkage_idx(2)) = h_cylinder;
                     else
+                        fprintf('V: %d %d\n', linkage_idx(1), linkage_idx(2));
+                        if ~isnan(this.grids{idx}.v_linkages(linkage_idx(1), linkage_idx(2)))
+                            delete(this.grids{idx}.v_linkages(linkage_idx(1), linkage_idx(2)));
+                        end
                         this.grids{idx}.v_linkages(linkage_idx(1), linkage_idx(2)) = h_cylinder;
                     end
                 end
             end
         end
-        function [idx, coord] = get_current_node(this)
-            idx = this.v.h_grid_dropdown.Value;
-            X = str2num(this.v.h_electrode_x.String(this.v.h_electrode_x.Value,:));
-            Y = str2num(this.v.h_electrode_y.String(this.v.h_electrode_y.Value,:));
+        function [idx, coord, dims] = poll_inputs(this)
+            idx = this.v_w.v.h_grid_dropdown.Value;
+            X = str2num(this.v_w.v.h_electrode_x.String(this.v_w.v.h_electrode_x.Value,:));
+            Y = str2num(this.v_w.v.h_electrode_y.String(this.v_w.v.h_electrode_y.Value,:));
             coord = [X, Y];
+            W = str2num(this.v_w.v.h_edit_grid_dimensions_x.String);
+            H = str2num(this.v_w.v.h_edit_grid_dimensions_y.String);
+            dims = [W, H];
         end
         function color = next_color(varargin)
             color = [ 0.8500    0.3250    0.0980 ]; % burnt orange
@@ -106,27 +156,50 @@ classdef GeometryController < handle
         end
         function button_up(src, ev, is_rotated, varargin)
             v = guidata(src);
+            set(v.hMainFigure, 'WindowButtonMotionFcn', '');
+            set(v.hMainFigure, 'WindowButtonUpFcn', '');
             if ~is_rotated.get() && ~isempty(varargin) && isa(varargin{1}, 'matlab.graphics.eventdata.Hit')
                 hit = varargin{1};
                 [X, Y, Z, centroid] = electrode.GeometryController.marker_by_point(...
                     src, hit.IntersectionPoint);
                 if ~isnan(X)
-                    hMarker = surf2patch(X, Y, Z);
+                    pMarker = surf2patch(X, Y, Z);
+                    hMarker = patch('vertices', pMarker.vertices,...
+                        'faces', pMarker.faces, 'facealpha',1.0,...
+                        'facecolor','red','facelighting','phong',...
+                        'edgecolor','red');
                     % disp('FACE HIT');
                     v.controller.add_marker(hMarker, centroid, true);
-                    v.markers(utils.fieldIndex(v, 'markers')) = hMarker;
+%                     v.markers(utils.fieldIndex(v, 'markers')) = hMarker;
                     guidata(v.hMainFigure, v);
-                    drawing.redrawSurface(v);
+%                     drawing.redrawSurface(v);
                 end % no logic for no-op yet
             else
                 gui.perspectiveChange_Callback(src, ev);
             end
             is_rotated.set(false);
-            set(v.hMainFigure, 'WindowButtonMotionFcn', '');
-            set(v.hMainFigure, 'WindowButtonUpFcn', '');
         end
     end
     methods(Access = protected, Static)
+        function marker_button_down(src, ev, is_rotated, C)
+            gui.perspectiveChange_Callback(src, ev);
+            v = guidata(src);
+            [az, el] = view(v.hAxes);
+            p_0 = get(groot, 'PointerLocation');
+            set(v.hMainFigure, 'WindowButtonMotionFcn', {@electrode.GeometryController.rotate, is_rotated, p_0, [az, el]});
+            set(v.hMainFigure, 'WindowButtonUpFcn', { @electrode.GeometryController.marker_button_up, is_rotated, C });
+        end
+        function marker_button_up(src, ev, is_rotated, C)
+            v = guidata(gcbf);
+            set(v.hMainFigure, 'WindowButtonMotionFcn', '');
+            set(v.hMainFigure, 'WindowButtonUpFcn', '');
+            if ~is_rotated.get()
+                v.controller.select(C);
+            else
+                gui.perspectiveChange_Callback(src, ev);
+            end
+            is_rotated.set(false);
+        end
         function rotate(src, ~, is_rotated, p_0, view_0)
             is_rotated.set(true);
             v = guidata(src);
@@ -143,7 +216,7 @@ classdef GeometryController < handle
             centroid = (A + B) ./ 2;
             h_cylinder = patch(surf2patch(X + centroid(1), Y + centroid(2), (Z - 0.5) * norm(A - B) + centroid(3)));
             rot = vrrotvec([ 0, 0, 1 ], A - B);
-            rotate(h_cylinder, rot(1:3), rot(4), centroid);
+            rotate(h_cylinder, rot(1:3), rot(4)/pi*180, centroid);
             drawnow;
         end
         function [X, Y, Z, centroid] = marker_by_point(src, P)
