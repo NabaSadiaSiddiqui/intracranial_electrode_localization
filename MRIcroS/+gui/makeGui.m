@@ -26,6 +26,8 @@ v_w.v.h_grid_name = uicontrol('style','edit', 'HorizontalAlignment', 'Left');
 
 v_w.v.ax_grid = axes('box','off', 'xtick', [], 'ytick', [], 'Visible', 'off');
 
+v_w.v.h_unmark_button = uicontrol('style', 'pushbutton', 'string', 'Unmark', 'Visible', 'Off', 'Callback', @(~, ~) v_w.get().controller.unmark_current());
+
 % uicontrol('style','text', 'position',[0.005 0.55 0.15 0.05], 'string', 'Pick an electrode');
 % v.h_electrode_drop_down = uicontrol('style','popup');
 v_w.v.h_electrode_x = uicontrol('style', 'popup', 'Callback', ...
@@ -73,7 +75,9 @@ v_w.v.fFigureUtilPanel = gui.FloatingControl(uipanel(), ...
                     [[ 0, 0.5 ]; [ 0, 0.0 ]], [[ 0, 1.0 ]; [ 0, 1.0 ]]) ...
             ]), ...
         gui.FloatingControl(v_w.v.ax_grid, ...
-            [ 10; 10 ], [[ -10, 1.0 ]; [ 300, 0.0 ]])...
+            [ 10; 10 ], [[ -10, 1.0 ]; [ 300, 0.0 ]]), ...
+        gui.FloatingControl(v_w.v.h_unmark_button, ...
+            [ 10; -180 ], [[ -10, 1.0 ]; [ input_height, 0 ]])...
     ]...
 );
 
@@ -83,7 +87,7 @@ v_w.v.controller = electrode.GeometryController(v_w);
 v_w.v.controller.add_grid('Grid X', 8, 8);
 
 set(v_w.v.hMainFigure, 'ResizeFcn', @refloatPanels);
-set(v_w.v.hMainFigure, 'KeyPressFcn', @keyboard_move);
+set(v_w.v.hMainFigure, 'KeyPressFcn', @keypress_handler);
 
 v = v_w.v; % stop with the Wrapper nonsense for the native MRIcroS below
 
@@ -93,25 +97,31 @@ function refloatPanels(src, ~)
     v.fFigureUtilPanel.reposition(v.hMainFigure);
 end
 
-function keyboard_move(src, ev)
+function keypress_handler(src, ev)
     v = guidata(src);
-    keymap = containers.Map(...
+    move_keymap = containers.Map(...
         { 'leftarrow', 'rightarrow', 'uparrow', 'downarrow',...
           'a', 'd', 'w', 's' }, ...
         { [ -1 0 ], [ 1 0 ], [ 0 1 ], [ 0 -1 ],...
           [ -1 0 ], [ 1 0 ], [ 0 1 ], [ 0 -1 ] }...
     );
-    if keymap.isKey(ev.Key)
-        direction = keymap(ev.Key);
+    if move_keymap.isKey(ev.Key)
+        direction = move_keymap(ev.Key);
         if any(strcmp(ev.Modifier, 'shift'))
-
+            
         else
             v.controller.select(...
                 [ v.h_electrode_x.Value, ...
                   v.h_electrode_y.Value ...
                 ] + direction);
         end
+    elseif strcmp(ev.Key, 'escape')
+        v.controller.unmark_current();
     end
+end
+
+function keyboard_move(src, ev)
+    
 end
 
 % [0.0 0.0 1 1]

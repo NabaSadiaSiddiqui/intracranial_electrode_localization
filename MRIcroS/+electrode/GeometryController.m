@@ -51,6 +51,41 @@ classdef GeometryController < handle
             this.v_w.v.h_electrode_x.String = 1:width;
             this.v_w.v.h_electrode_y.String = 1:height;
         end
+        function unmark_current(this)
+            [idx, ~, ~] = this.poll_inputs();
+            if ~any(isnan(this.selected)) % &&...
+               % ~isempty()
+                delete(this.grids{idx}.markers{this.selected(1), this.selected(2)}.marker);
+                this.grids{idx}.markers{this.selected(1), this.selected(2)} = [];
+                
+                % delete active linkages around this marker
+                linkages = this.get_active_linkages();
+                for i = 1:length(linkages(1, :))
+                    % horizontal linkages
+                    if ~isempty(linkages{1, i})
+                        linkage_idx = linkages{1, i}.linkage;
+                        delete(this.grids{idx}.h_linkages(linkage_idx(1), linkage_idx(2)));
+                        this.grids{idx}.h_linkages(linkage_idx(1), linkage_idx(2)) = NaN(1);
+                    else
+                        break
+                    end
+                end
+                for i = 1:length(linkages(2, :))
+                    % vertical linkages
+                    if ~isempty(linkages{2, i})
+                        linkage_idx = linkages{2, i}.linkage;
+                        delete(this.grids{idx}.v_linkages(linkage_idx(1), linkage_idx(2)));
+                        this.grids{idx}.v_linkages(linkage_idx(1), linkage_idx(2)) = NaN(1);
+                    else
+                        break
+                    end
+                end
+                
+                this.selected = NaN(1, 2);
+            end
+            
+            set(this.v_w.v.h_unmark_button, 'Visible', 'Off');
+        end
         function select(this, coord)
             [idx, ~, dims] = this.poll_inputs();
             x = coord(1);
@@ -63,15 +98,19 @@ classdef GeometryController < handle
                 this.v_w.v.h_electrode_y.Value = y;
                 
                 if ~isempty(this.grids{idx}.markers{x, y})
+                    % marker exists at this coordinate
                     this.selected = coord;
                 
                     set(this.grids{idx}.markers{x, y}.marker, ...
                         'facecolor', 'cyan');
                     set(this.grids{idx}.markers{x, y}.marker, ...
                         'edgecolor', 'cyan');
+                    
+                    set(this.v_w.v.h_unmark_button, 'Visible', 'On');
                 end
+            else
+                set(this.v_w.v.h_unmark_button, 'Visible', 'Off');
             end
-            % else % no-op
         end
     end
     methods(Access = protected)
@@ -86,6 +125,31 @@ classdef GeometryController < handle
                 this.selected = NaN(1, 2);
             end
             % else % no-op
+            
+            set(this.v_w.v.h_unmark_button, 'Visible', 'Off');
+        end
+        function active = get_active_linkages(this)
+            [idx, C, ~] = this.poll_inputs();
+            active = cell(2, 0);
+            cardinals = [[ 1 0 ]; [ -1 0 ]; [ 0 1 ]; [ 0 -1 ]];
+            for i = 1:length(cardinals)
+                target = C + cardinals(i, :);
+                if ~any(target < 1 | target > size(this.grids{idx}.markers)) && ...
+                   ~isempty(this.grids{idx}.markers{target(1), target(2)})
+                    linkage_idx = C - poslin(-cardinals(i, :));
+                    if cardinals(i, 1) ~= 0
+                        append_idx = length(active(1,:)) + 1;
+                        active{1, append_idx}.linkage = linkage_idx;
+                        active{1, append_idx}.marker = target;
+                        fprintf('H: %d %d\n', linkage_idx(1), linkage_idx(2));
+                    else
+                        append_idx = length(active(2,:)) + 1;
+                        active{2, append_idx}.linkage = linkage_idx;
+                        active{2, append_idx}.marker = target;
+                        fprintf('V: %d %d\n', linkage_idx(1), linkage_idx(2));
+                    end
+                end
+            end
         end
         function add_marker(this, marker, centroid, enabled)
             [idx, C, ~] = this.poll_inputs();
@@ -102,27 +166,39 @@ classdef GeometryController < handle
             is_rotated = utils.Wrapper(false);
             set(marker, 'ButtonDownFcn', { @this.marker_button_down, is_rotated, C });
             this.select(C);
-            cardinals = [[ 1 0 ]; [ -1 0 ]; [ 0 1 ]; [ 0 -1 ]];
-            for i = 1:length(cardinals)
-                target = C + cardinals(i, :);
-                if ~any(target < 1 | target > size(this.grids{idx}.markers)) && ...
-                   ~isempty(this.grids{idx}.markers{target(1), target(2)})
+            
+            % reposition linkages
+            linkages = this.get_active_linkages();
+            for i = 1:length(linkages(1, :))
+                if ~isempty(linkages{1, i})
+                    % horizontal linkages
+                    linkage_idx = linkages{1, i}.linkage;
+                    target = linkages{1, i}.marker;
                     h_cylinder = this.cylinder_to_linkage(...
                         centroid, this.grids{idx}.markers{target(1), target(2)}.centroid, 1.0);
-                    linkage_idx = C - poslin(-cardinals(i, :));
-                    if cardinals(i, 1) ~= 0
-                        fprintf('H: %d %d\n', linkage_idx(1), linkage_idx(2));
-                        if ~isnan(this.grids{idx}.h_linkages(linkage_idx(1), linkage_idx(2)))
-                            delete(this.grids{idx}.h_linkages(linkage_idx(1), linkage_idx(2)));
-                        end
-                        this.grids{idx}.h_linkages(linkage_idx(1), linkage_idx(2)) = h_cylinder;
-                    else
-                        fprintf('V: %d %d\n', linkage_idx(1), linkage_idx(2));
-                        if ~isnan(this.grids{idx}.v_linkages(linkage_idx(1), linkage_idx(2)))
-                            delete(this.grids{idx}.v_linkages(linkage_idx(1), linkage_idx(2)));
-                        end
-                        this.grids{idx}.v_linkages(linkage_idx(1), linkage_idx(2)) = h_cylinder;
+                    
+                    if ~isnan(this.grids{idx}.h_linkages(linkage_idx(1), linkage_idx(2)))
+                        delete(this.grids{idx}.h_linkages(linkage_idx(1), linkage_idx(2)));
                     end
+                    this.grids{idx}.h_linkages(linkage_idx(1), linkage_idx(2)) = h_cylinder;
+                else
+                    break
+                end
+            end
+            for i = 1:length(linkages(2, :))
+                if ~isempty(linkages{2, i})
+                    % vertical linkages
+                    linkage_idx = linkages{2, i}.linkage;
+                    target = linkages{2, i}.marker;
+                    h_cylinder = this.cylinder_to_linkage(...
+                        centroid, this.grids{idx}.markers{target(1), target(2)}.centroid, 1.0);
+                    
+                    if ~isnan(this.grids{idx}.v_linkages(linkage_idx(1), linkage_idx(2)))
+                        delete(this.grids{idx}.v_linkages(linkage_idx(1), linkage_idx(2)));
+                    end
+                    this.grids{idx}.v_linkages(linkage_idx(1), linkage_idx(2)) = h_cylinder;
+                else
+                    break
                 end
             end
         end
