@@ -131,6 +131,7 @@ classdef GeometryController < handle
         function active = get_active_linkages(this)
             [idx, C, ~] = this.poll_inputs();
             active = cell(2, 0);
+            num_linkages = [ 0 0 ]; % h, v
             cardinals = [[ 1 0 ]; [ -1 0 ]; [ 0 1 ]; [ 0 -1 ]];
             for i = 1:length(cardinals)
                 target = C + cardinals(i, :);
@@ -138,15 +139,15 @@ classdef GeometryController < handle
                    ~isempty(this.grids{idx}.markers{target(1), target(2)})
                     linkage_idx = C - poslin(-cardinals(i, :));
                     if cardinals(i, 1) ~= 0
-                        append_idx = length(active(1,:)) + 1;
-                        active{1, append_idx}.linkage = linkage_idx;
-                        active{1, append_idx}.marker = target;
+                        active{1, num_linkages(1) + 1}.linkage = linkage_idx;
+                        active{1, num_linkages(1) + 1}.marker = target;
                         fprintf('H: %d %d\n', linkage_idx(1), linkage_idx(2));
+                        num_linkages(1) = num_linkages(1) + 1;
                     else
-                        append_idx = length(active(2,:)) + 1;
-                        active{2, append_idx}.linkage = linkage_idx;
-                        active{2, append_idx}.marker = target;
+                        active{2, num_linkages(2) + 1}.linkage = linkage_idx;
+                        active{2, num_linkages(2) + 1}.marker = target;
                         fprintf('V: %d %d\n', linkage_idx(1), linkage_idx(2));
+                        num_linkages(2) = num_linkages(2) + 1;
                     end
                 end
             end
