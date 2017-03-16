@@ -1,6 +1,7 @@
 classdef Grid
     properties(Access = public)
         name
+        caret
         markers
         h_linkages
         v_linkages

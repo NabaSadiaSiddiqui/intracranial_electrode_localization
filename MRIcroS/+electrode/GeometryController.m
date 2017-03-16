@@ -50,12 +50,33 @@ classdef GeometryController < handle
             this.v_w.v.h_edit_grid_dimensions_y.String = height;
             this.v_w.v.h_electrode_x.String = 1:width;
             this.v_w.v.h_electrode_y.String = 1:height;
+            
+            set(this.v_w.v.ax_grid, 'xtick', 0:1/(width+1):1);
+            set(this.v_w.v.ax_grid, 'ytick', 0:1/(height+1):1);
+        end
+        function update_grid(this)
+            [idx, ~, dims] = this.poll_inputs();
+            this.v_w.v.h_electrode_x.String = 1:dims(1);
+            this.v_w.v.h_electrode_y.String = 1:dims(2);
+            
+            set(this.v_w.v.ax_grid, 'xtick', 0:1/(dims(1)+1):1);
+            set(this.v_w.v.ax_grid, 'ytick', 0:1/(dims(2)+1):1);
+            
+            for i=1:size(this.grids{idx}.markers, 1)
+                for j=1:size(this.grids{idx}.markers, 2)
+                    if ~isempty(this.grids{idx}.markers{i, j})
+                        set(this.grids{idx}.markers{i, j}.indicator, 'Position', ...
+                            [ [ i-1, j-1 ] .* (dims + ones(size(dims))) .^ -1,  (dims + ones(size(dims))) .^ -1 ]);
+                    end
+                end
+            end
         end
         function unmark_current(this)
             [idx, ~, ~] = this.poll_inputs();
             if ~any(isnan(this.selected)) % &&...
                % ~isempty()
                 delete(this.grids{idx}.markers{this.selected(1), this.selected(2)}.marker);
+                delete(this.grids{idx}.markers{this.selected(1), this.selected(2)}.indicator);
                 this.grids{idx}.markers{this.selected(1), this.selected(2)} = [];
                 
                 % delete active linkages around this marker
@@ -106,6 +127,9 @@ classdef GeometryController < handle
                     set(this.grids{idx}.markers{x, y}.marker, ...
                         'edgecolor', 'cyan');
                     
+                    set(this.grids{idx}.markers{x, y}.indicator, ...
+                        'facecolor', 'cyan');
+                    
                     set(this.v_w.v.h_unmark_button, 'Visible', 'On');
                 end
             else
@@ -121,6 +145,9 @@ classdef GeometryController < handle
                     'facecolor', 'red');
                 set(this.grids{idx}.markers{this.selected(1), this.selected(2)}.marker, ...
                     'edgecolor', 'red');
+                
+                set(this.grids{idx}.markers{this.selected(1), this.selected(2)}.indicator, ...
+                    'facecolor', 'red');
                 
                 this.selected = NaN(1, 2);
             end
@@ -153,14 +180,21 @@ classdef GeometryController < handle
             end
         end
         function add_marker(this, marker, centroid, enabled)
-            [idx, C, ~] = this.poll_inputs();
+            [idx, C, dims] = this.poll_inputs();
             if ~isempty(this.grids{idx}.markers{C(1), C(2)})
                 delete(this.grids{idx}.markers{C(1), C(2)}.marker);
             end
+            
+            indicator = rectangle(this.v_w.get().ax_grid,...
+                        'Position', [ (C - ones(size(C))) .* (dims + ones(size(dims))) .^ -1, (dims + ones(size(dims))) .^ -1 ], ...
+                        'FaceColor', 'red');
+            set(indicator, 'ButtonDownFcn', @(~, ~) this.select(C));
+            
             this.grids{idx}.markers{C(1), C(2)} = ...
                 struct(...
                     'centroid', centroid,...
                     'marker', marker,...
+                    'indicator', indicator, ...
                     'enabled', enabled,...
                     'color', this.next_color()...
             );
