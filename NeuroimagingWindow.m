@@ -57,25 +57,31 @@ classdef NeuroimagingWindow
     
 end
 
-function get_coord(h, e, handle_grid)
+function get_coord(h, e, handle_grid)    
+    if handle_grid.GridCurrElectrodeDisabled.Value == 1
+       msgbox('ERROR: The current electrode is disabled');
+    else
+        % --- Get coordinates
+        x = get(h, 'XData');
+        y = get(h, 'YData');
 
-    % --- Get coordinates
-    x = get(h, 'XData');
-    y = get(h, 'YData');
-
-    % --- Get index of the clicked point
-    [~, i] = min((e.IntersectionPoint(1)-x).^2 + (e.IntersectionPoint(2)-y).^2);
-    disp(strcat('(', num2str(x(i)), ',', num2str(y(i)), ')'));
+        % --- Get index of the clicked point
+        [~, i] = min((e.IntersectionPoint(1)-x).^2 + (e.IntersectionPoint(2)-y).^2);
+        clicked_point = strcat('(', num2str(x(i)), ',', num2str(y(i)), ')');
     
-    x(i) = [];
-    y(i) = [];
-    set(h, 'XData', x);
-    set(h, 'YData', y);
+        % -- Update neuroimaging window
+        x(i) = [];
+        y(i) = [];
+        set(h, 'XData', x);
+        set(h, 'YData', y);
+        
+        % --- Update grid electrode
+        update_grid(handle_grid, clicked_point);
+    end
     
-    update_grid(handle_grid);
 end
 
-function update_grid(handle_grid)
+function update_grid(handle_grid, clicked_point)
     electrode_drop_down = handle_grid.GridElectrodeDropdown;
     selected_index = electrode_drop_down.Value;
     selected_value = electrode_drop_down.String(selected_index,:);
@@ -89,7 +95,8 @@ function update_grid(handle_grid)
     sz = 75;
     scatter(row, col, sz, 'filled', 'b');
     hold off;
-    handle_grid.add_marked_electrode(selected_value);
+    handle_grid.add_marked_electrode(selected_value, clicked_point);
+    handle_grid.increment_electrode_dropdown();
 end
 
 

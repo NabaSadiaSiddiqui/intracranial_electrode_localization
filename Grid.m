@@ -7,9 +7,9 @@ classdef Grid < handle
         GridDimensionsY;
         GridName;
         GridElectrodeDropdown;
-        GridMarkedElectrodes = [];
+        GridMarkedElectrodes = containers.Map;
         GridAxes;
-        GridDisabledElectrodes = [];
+        GridDisabledElectrodes = {};
         GridCurrElectrodeDisabled;
         GridColor = [0, 0, 1];
     end
@@ -51,6 +51,10 @@ classdef Grid < handle
             obj.GridMarkedElectrodes = value;
         end
         
+        function set.GridDisabledElectrodes(obj, value)
+            obj.GridDisabledElectrodes = value;
+        end
+        
         function set.GridAxes(obj, value)
             obj.GridAxes = value;
         end
@@ -86,9 +90,9 @@ classdef Grid < handle
             options = options(2:end);
 
             uicontrol('style','text', 'units','normalized', 'position',[0.505 0.55 0.15 0.05], 'string', 'Pick an electrode');
-            obj.GridElectrodeDropdown = uicontrol('style','popup', 'units','normalized', 'position',[0.505 0.5 0.495 0.05], 'string', options);
+            obj.GridElectrodeDropdown = uicontrol('style','popup', 'units','normalized', 'position',[0.505 0.5 0.495 0.05], 'string', options, 'callback', {@obj.electrode_dropdown});
             uicontrol('style', 'text', 'units', 'normalized', 'position', [0.505 0.45 0.15 0.05], 'string', 'Disable electrode');
-            obj.GridCurrElectrodeDisabled = uicontrol('style','checkbox', 'units', 'normalized', 'position', [0.7 0.45 0.05 0.05], 'value', 0);
+            obj.GridCurrElectrodeDisabled = uicontrol('style','checkbox', 'units', 'normalized', 'position', [0.7 0.45 0.05 0.05], 'value', 0, 'callback', {@obj.update_disabled_electrodes});
         end
         
         function create_grid(obj, dim_x, dim_y)
@@ -112,14 +116,82 @@ classdef Grid < handle
             set(obj.GridAxes,'Visible','off')
         end
         
-        function add_marked_electrode(obj, electrode)
-            obj.GridMarkedElectrodes = [obj.GridMarkedElectrodes, electrode];
+        function update_disabled_electrodes(obj, checkbox, event, handles)
+            % Update the state of the variable 'GridDisabledElectrodes'
+            % depending on whether or not the user has checked or unchecked
+            % the 'Disable Electrode' checkbox
+            selected_value = obj.get_selected_electrode_from_dropdown();
+            if (get(checkbox,'Value') == get(checkbox,'Max'))
+                isPresent = 0;
+                for electrode = obj.GridDisabledElectrodes
+                    if electrode{:} == selected_value
+                        isPresent = 1;
+                    end
+                end
+                if isPresent == 0
+                    obj.GridDisabledElectrodes = [obj.GridDisabledElectrodes, selected_value];
+                end
+            else
+                isPresent = 0;
+                index = 1;
+                selected_value_index = 0;
+                for electrode = obj.GridDisabledElectrodes
+                    if electrode{:} == selected_value
+                        isPresent = 1;
+                        selected_value_index = index;
+                    end
+                    index = index + 1;
+                end
+                if isPresent
+                    obj.GridDisabledElectrodes(selected_value_index) = [];
+                end
+            end
         end
         
-        function color_callback(obj, event, handls)
+        function add_marked_electrode(obj, grid_electrode, brain_electrode)
+            % Map the value of selected drop down to clicked position on
+            % neuroimaging window
+            obj.GridMarkedElectrodes(grid_electrode) = brain_electrode;
+        end
+        
+        function color_callback(obj, event, handles)
           obj.GridColor = uisetcolor;
           disp(obj.GridColor);
         end
+        
+        function electrode_dropdown(obj, dropdown, event, handles)
+            % Preserve the state of checkbox
+            % If the selected electrode value from dropdown was previously
+            % marked as disabled, then set the value of checkbox to 1
+            % Otherwise, set the value of checkbox to 0
+            selected_value = obj.get_selected_electrode_from_dropdown();
+            isPresent = 0;
+            for electrode = obj.GridDisabledElectrodes
+                if electrode{:} == selected_value
+                    isPresent = 1;
+                end
+            end
+            if isPresent == 0
+                set(obj.GridCurrElectrodeDisabled, 'Value', 0);
+            else
+                set(obj.GridCurrElectrodeDisabled, 'Value', 1);
+            end
+        end
+        
+        function selected_electrode = get_selected_electrode_from_dropdown(obj)
+            % Get the value of selected electrode from dropdown
+            electrode_drop_down = obj.GridElectrodeDropdown;
+            selected_index = electrode_drop_down.Value;
+            selected_electrode = electrode_drop_down.String(selected_index,:);
+        end
+        
+        function increment_electrode_dropdown(obj)
+            % Set the electrode dropdown value to next element in the list
+            electrode_dropdown = obj.GridElectrodeDropdown;
+            selected_index = electrode_dropdown.Value;
+            electrode_dropdown.Value = selected_index + 1;
+        end
+        
     end
 end
 
