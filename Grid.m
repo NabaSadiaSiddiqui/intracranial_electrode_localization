@@ -74,7 +74,7 @@ classdef Grid < handle
             obj.create_grid(grid_dim_x, grid_dim_y);
         end
         
-        function setup_electrode_grid_callback(obj, src, event)
+        function setup_electrode_grid_callback(obj, src, event, handles)
             obj.setup_electrode_grid();
         end
         
@@ -151,10 +151,11 @@ classdef Grid < handle
         function add_marked_electrode(obj, grid_electrode, brain_electrode)
             % Map the value of selected drop down to clicked position on
             % neuroimaging window
+            disp('add_marked_electrode');
             obj.GridMarkedElectrodes(grid_electrode) = brain_electrode;
         end
         
-        function color_callback(obj, event, handles)
+        function color_callback(obj, uicolor, event, handles)
           obj.GridColor = uisetcolor;
           disp(obj.GridColor);
         end
