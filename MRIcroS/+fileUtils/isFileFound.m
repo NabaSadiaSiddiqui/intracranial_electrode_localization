@@ -1,14 +1,9 @@
-function [filename, isFound] = isFileFound(v, filename)
+function [filename, isFound] = isFileFound(filename)
 if exist(filename, 'file')
 	isFound = true;
 	return;
 end
-if isfield(v, 'examplesFilePath')
-	examplesFilePath = v.examplesFilePath;
-else
-	examplesFilePath = [fileparts(which('MRIcroS')) filesep '+examples'];
-end
-tempname = fullfile(examplesFilePath, filename);
+tempname = fullfile([fileparts(which('MRIcroS')) filesep '+examples'], filename);
 isFound = exist(tempname, 'file');
 if isFound
 	filename = tempname;

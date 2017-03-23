@@ -266,15 +266,6 @@ commands.setBackgroundColor(v,[1 1 1]);
 drawing.redrawSurface(v);
 %end makeGUI()
 
-function checkVersionSub()
-if verLessThan('matlab', '7.09')
-    error('This software requires Matlab 2009b or later (requires unused argument syntax, "[~ d] = version")');
-    % http://blogs.mathworks.com/steve/2010/01/11/about-the-unused-argument-syntax-in-r2009b/
-end
-if verLessThan('matlab', '7.11')
-   printf('WARNING: This software has only been tested on Matlab 2010b and later\n');
-end
-end
 %end checkVersionSub()
 
 % function checkVersionSub()

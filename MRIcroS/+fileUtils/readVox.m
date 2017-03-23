@@ -1,4 +1,4 @@
-function [faces, vertices, vertexColors] = readVox (filename, reduce, smooth, thresh, vertexColor)
+function [faces, vertices, vertexColors, Vol, Hdr] = readVox (filename, reduce, smooth, thresh, vertexColor)
 % filename: nii or nii.gz image to open
 % thresh : isosurface threshold, e.g. if 1 then voxels less than 1 are transparent
 %          "Inf" or "-Inf" for automatic thresholds
