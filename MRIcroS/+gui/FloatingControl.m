@@ -53,8 +53,8 @@ classdef FloatingControl < handle
                isequal(this.area(:, 1), [ 0; 0 ])
                 % no pixel component: use normalized units
                 adjusted_area = parent_area(:,2) .* ...
-                    this.area(:,2) .* (norm_offset + heaviside(this.area(:,2)) .* ([ 1; 1 ] - 2 * norm_offset));
-                adjusted_offset = parent_area(:,2) .* norm_offset - poslin(-adjusted_area);
+                    this.area(:,2) .* (norm_offset + (this.area(:,2) > 0) .* ([ 1; 1 ] - 2 * norm_offset));
+                adjusted_offset = parent_area(:,2) .* norm_offset - max(-adjusted_area, 0);
                 set(this.h, 'Units', 'normalized');
                 set(this.h, 'Position', [ adjusted_offset; adjusted_area ]);
                 parent_area(:, 2) = adjusted_area; % update for children
@@ -63,10 +63,10 @@ classdef FloatingControl < handle
                     parent_area(:, 1) = parent_area(:, 1) .* parent_area(:, 2); % apply fractional to absolute
                 end
                 px_offset = parent_area(:,1) .* norm_offset + this.offset(:,1);
-                px_area = this.area(:,2) .* (px_offset + heaviside(this.area(:,2)) .* (parent_area(:,1) - 2 * px_offset)) + ...
+                px_area = this.area(:,2) .* (px_offset + (this.area(:,2) > 0) .* (parent_area(:,1) - 2 * px_offset)) + ...
                     this.area(:,1); % adjust pixels
                 
-                adjusted_offset = px_offset - poslin(-px_area);
+                adjusted_offset = px_offset - max(-px_area, 0);
                 setpixelposition(this.h, [ adjusted_offset; abs(px_area) ]);
                 parent_area(:, 1) = px_area; % update for children
                 denormalize_flag = true;

@@ -326,8 +326,8 @@ classdef GeometryController < handle
             [X, Y, Z] = cylinder(r);
             centroid = (A + B) ./ 2;
             h_cylinder = patch(surf2patch(X + centroid(1), Y + centroid(2), (Z - 0.5) * norm(A - B) + centroid(3)));
-            rot = vrrotvec([ 0, 0, 1 ], A - B);
-            rotate(h_cylinder, rot(1:3), rot(4)/pi*180, centroid);
+            n = cross([ 0, 0, 1 ], A - B);
+            rotate(h_cylinder, n/norm(n), acos(dot([ 0, 0, 1 ], A - B)/norm(A - B))/pi*180, centroid);
             drawnow;
         end
         function [X, Y, Z, centroid] = marker_by_point(src, P)
