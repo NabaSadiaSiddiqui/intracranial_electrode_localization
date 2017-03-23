@@ -53,6 +53,22 @@ classdef NeuroimagingWindow
             
             hold off;            
         end
+        
+        function refresh_grid(handle_grid)
+            keys_marked_electrodes = keys(handle_grid.GridMarkedElectrodes);
+            axes(handle_grid.GridAxes);
+            for i = 1:length(handle_grid.GridMarkedElectrodes)
+                coord_grid_arr = strsplit(keys_marked_electrodes{i}, ',');
+                row = strtok(coord_grid_arr(1), '(');
+                col = strtok(coord_grid_arr(2), ')');
+                row_num = str2num(row{:});
+                col_num = str2num(col{:});
+                hold on;
+                sz = 75;
+                scatter(col_num, row_num, sz, 'filled', 'b');
+                hold off;
+            end
+        end
     end
     
 end

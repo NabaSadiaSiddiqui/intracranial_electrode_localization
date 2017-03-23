@@ -29,6 +29,9 @@ classdef Grid < handle
             obj.GridDimensionsX = h_grid_dim_x;
             obj.GridDimensionsY = h_grid_dim_y;
             obj.GridName = h_grid_name;
+            obj.GridMarkedElectrodes = containers.Map;
+            obj.GridDisabledElectrodes = {};
+            obj.GridColor = [0, 0, 1];
         end
         
         function set.GridDimensionsX(obj, value)
@@ -151,7 +154,6 @@ classdef Grid < handle
         function add_marked_electrode(obj, grid_electrode, brain_electrode)
             % Map the value of selected drop down to clicked position on
             % neuroimaging window
-            disp('add_marked_electrode');
             obj.GridMarkedElectrodes(grid_electrode) = brain_electrode;
         end
         
@@ -191,6 +193,25 @@ classdef Grid < handle
             electrode_dropdown = obj.GridElectrodeDropdown;
             selected_index = electrode_dropdown.Value;
             electrode_dropdown.Value = selected_index + 1;
+        end
+        
+        function copy_data(obj, src)
+            obj.GridName.String = src.name;
+            obj.GridDimensionsX.String = src.xDim;
+            obj.GridDimensionsY.String = src.yDim;
+            marked_electrodes_arr = strsplit(src.markedElectrodes, ']');
+            for marked_electrode = marked_electrodes_arr
+                if strcmp(marked_electrode, '') == 0
+                    token = strtok(marked_electrode, '[');
+                    marked_electrode_clean = strsplit(string(token), '),(');
+                    grid_electrode = strcat(marked_electrode_clean(1), ')');
+                    brain_electrode = strcat('(', marked_electrode_clean(2));
+                    obj.add_marked_electrode(char(grid_electrode), char(brain_electrode))
+                end
+            end
+            %if strcmp(src.disabled_electrodes, '') == 0
+            %    obj.GridDisabledElectrodes = src.disabled_electrodes;
+            %end
         end
         
     end

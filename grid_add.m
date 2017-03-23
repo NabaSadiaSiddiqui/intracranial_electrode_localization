@@ -25,7 +25,7 @@ function grid_add(src, event, handles)
     global grids;
     exists = 0;
     for grid = grids
-        if grid.name == aGrid.name
+        if strcmp(grid.name, aGrid.name) == 1
             exists = 1;
         end
     end
