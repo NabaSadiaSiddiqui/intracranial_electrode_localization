@@ -9,7 +9,7 @@ classdef Grid < handle
         GridElectrodeDropdown;
         GridMarkedElectrodes = containers.Map;
         GridAxes;
-        GridDisabledElectrodes = {};
+        GridDisabledElectrodes = [];
         GridCurrElectrodeDisabled;
         GridColor = [0, 0, 1];
     end
@@ -30,7 +30,7 @@ classdef Grid < handle
             obj.GridDimensionsY = h_grid_dim_y;
             obj.GridName = h_grid_name;
             obj.GridMarkedElectrodes = containers.Map;
-            obj.GridDisabledElectrodes = {};
+            obj.GridDisabledElectrodes = [];
             obj.GridColor = [0, 0, 1];
         end
         
@@ -124,22 +124,22 @@ classdef Grid < handle
             % depending on whether or not the user has checked or unchecked
             % the 'Disable Electrode' checkbox
             selected_value = obj.get_selected_electrode_from_dropdown();
-            if (get(checkbox,'Value') == get(checkbox,'Max'))
+            if (get(checkbox,'Value') == get(checkbox,'Max')) % User checked the checkbox --> add to list
                 isPresent = 0;
                 for electrode = obj.GridDisabledElectrodes
-                    if electrode{:} == selected_value
+                    if electrode == selected_value
                         isPresent = 1;
                     end
                 end
                 if isPresent == 0
                     obj.GridDisabledElectrodes = [obj.GridDisabledElectrodes, selected_value];
                 end
-            else
+            else % User unchecked checkbox --> remove from list
                 isPresent = 0;
                 index = 1;
                 selected_value_index = 0;
                 for electrode = obj.GridDisabledElectrodes
-                    if electrode{:} == selected_value
+                    if electrode == selected_value
                         isPresent = 1;
                         selected_value_index = index;
                     end
@@ -169,8 +169,12 @@ classdef Grid < handle
             % Otherwise, set the value of checkbox to 0
             selected_value = obj.get_selected_electrode_from_dropdown();
             isPresent = 0;
-            for electrode = obj.GridDisabledElectrodes
-                if electrode{:} == selected_value
+            disabled_electrodes = strsplit(obj.GridDisabledElectrodes, ')(');
+            for disabled_electrode = disabled_electrodes
+                token = strtok(disabled_electrode, ')');
+                token2 = strtok(token, '(');
+                electrode = string(strcat('(', token2, ')'));
+                if strcmp(electrode, string(selected_value)) == 1
                     isPresent = 1;
                 end
             end
@@ -209,9 +213,9 @@ classdef Grid < handle
                     obj.add_marked_electrode(char(grid_electrode), char(brain_electrode))
                 end
             end
-            %if strcmp(src.disabled_electrodes, '') == 0
-            %    obj.GridDisabledElectrodes = src.disabled_electrodes;
-            %end
+            if strcmp(src.disabledElectrodes, '') == 0
+                obj.GridDisabledElectrodes = src.disabledElectrodes;
+            end
         end
         
     end
