@@ -215,9 +215,7 @@ classdef Grid < handle
                     obj.add_marked_electrode(char(grid_electrode), char(brain_electrode))
                 end
             end
-            if strcmp(src.disabledElectrodes, '') == 0
-                obj.GridDisabledElectrodes = src.disabledElectrodes;
-            end
+            obj.GridDisabledElectrodes = src.disabledElectrodes;
         end
         
     end

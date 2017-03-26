@@ -11,16 +11,11 @@ function grid_add(src, event, handles)
         marked_electrodes_map_to_str = strcat(marked_electrodes_map_to_str, marked_electrode);
     end
     
-    disabled_electrodes = '';
-    if ~isempty(h_grid.GridDisabledElectrodes)
-        disabled_electrodes = h_grid.GridDisabledElectrodes;
-    end
-    
     aGrid = struct('name', h_grid.GridName.String, ...
         'xDim', h_grid.GridDimensionsX.String, ...
         'yDim', h_grid.GridDimensionsY.String, ...
         'markedElectrodes', marked_electrodes_map_to_str, ...
-        'disabledElectrodes', disabled_electrodes);
+        'disabledElectrodes', h_grid.GridDisabledElectrodes);
     
     global grids;
     exists = 0;
@@ -33,4 +28,3 @@ function grid_add(src, event, handles)
         grids = [grids, aGrid];
     end
 end
-
