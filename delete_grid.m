@@ -16,5 +16,12 @@ function delete_grid(src, event, handles)
     if v == 1
         grids(s) = [];
     end
+    
+    global h_grid;
+    curr_grid = h_grid.GridName.String;
+    if strcmp(curr_grid, grid_list(s)) == 1
+        h_grid = Grid();
+        h_grid.setup_electrode_grid();
+    end
 end
 
