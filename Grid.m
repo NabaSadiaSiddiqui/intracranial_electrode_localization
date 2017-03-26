@@ -169,13 +169,15 @@ classdef Grid < handle
             % Otherwise, set the value of checkbox to 0
             selected_value = obj.get_selected_electrode_from_dropdown();
             isPresent = 0;
-            disabled_electrodes = strsplit(obj.GridDisabledElectrodes, ')(');
-            for disabled_electrode = disabled_electrodes
-                token = strtok(disabled_electrode, ')');
-                token2 = strtok(token, '(');
-                electrode = string(strcat('(', token2, ')'));
-                if strcmp(electrode, string(selected_value)) == 1
-                    isPresent = 1;
+            if length(obj.GridDisabledElectrodes) > 0
+                disabled_electrodes = strsplit(obj.GridDisabledElectrodes, ')(');
+                for disabled_electrode = disabled_electrodes
+                    token = strtok(disabled_electrode, ')');
+                    token2 = strtok(token, '(');
+                    electrode = string(strcat('(', token2, ')'));
+                    if strcmp(electrode, string(selected_value)) == 1
+                        isPresent = 1;
+                    end
                 end
             end
             if isPresent == 0
