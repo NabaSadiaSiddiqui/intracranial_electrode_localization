@@ -63,13 +63,19 @@ classdef FigureController < handle
         function button_up(this, src, ev, is_rotated, varargin)
             set(this.hFigure, 'WindowButtonMotionFcn', '');
             set(this.hFigure, 'WindowButtonUpFcn', '');
-            if ~is_rotated.get() && ~isempty(varargin) && isa(varargin{1}, 'matlab.graphics.eventdata.Hit')
-                hit = varargin{1};
-                centroid = this.geometry_controller.marker_by_point(hit.IntersectionPoint);
-                if ~isempty(centroid)
-                    % disp('FACE HIT');
-                    this.gui_controller.mark(centroid, true); % modify Grid model
-                end % no logic for no-op yet
+            if ~is_rotated.get() && ~isempty(varargin)
+                if isa(varargin{1}, 'matlab.graphics.eventdata.Hit')
+                    % mark electrode
+                    hit = varargin{1};
+                    centroid = this.geometry_controller.marker_by_point(hit.IntersectionPoint);
+                    if ~isempty(centroid)
+                        % disp('FACE HIT');
+                        this.gui_controller.mark(centroid, true); % modify Grid model
+                    end % no logic for no-op yet
+                elseif ismatrix(varargin{1}) && all(size(varargin{1}) == [1, 2])
+                    % select existing marker
+                    this.gui_controller.select(varargin{1});
+                end
             else
                 this.perspectiveChange_Callback(src, ev);
             end

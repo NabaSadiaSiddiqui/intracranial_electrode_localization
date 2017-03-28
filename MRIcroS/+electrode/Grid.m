@@ -1,38 +1,46 @@
-classdef Grid
+classdef Grid < handle
     properties(Access = public)
         name
         markers
         h_linkages
         v_linkages
         dims
-        marker_rad = 100
+    end
+    properties(Access = public, Constant)
+        MARKER_RAD = 3.0 % mm-radius
     end
     properties(Access = protected)
         figure_controller
     end
     methods(Access = public)
-        function obj = Grid(name, figure_controller, width, height)
+        function obj = Grid(name, width, height)
             obj.name = name;
-            obj.figure_controller = figure_controller;
             obj.markers = {}; % cell(width, height)
             obj.h_linkages = {}; % NaN(width-1, height)
             obj.v_linkages = {}; % NaN(width, height-1) % fenceposts!
             obj.dims = [ width, height ];
         end
         
-        % Purely view manipulations: do not talk to model
+        % [OBS] Purely view manipulations: do not talk to model
+        % this.markers is the model for the selected markers, so
+        % manipulating the this.markers modifies the model necessarily.
+        % This is sort of a model class.
         function mark(this, centroid, C, enabled)
             if this.has_marker(C)
                 delete(this.markers{C(1), C(2)}.marker);
             end
             
-            [X, Y, Z] = sphere(this.marker_rad);
-            is_rotated = utils.Wrapper(false);
-            pMarker = surf2patch(X + centroid(1), Y + centroid(2), Z + centroid(3));
+            [X, Y, Z] = sphere();
+            X = X * this.MARKER_RAD + centroid(1);
+            Y = Y * this.MARKER_RAD + centroid(2);
+            Z = Z * this.MARKER_RAD + centroid(3);
+            % use marker_rad directly -- figure should be scaled to 1mm
+            % cubic vox at loading time
+            pMarker = surf2patch(X, Y, Z);
             hMarker = patch('vertices', pMarker.vertices,...
                 'faces', pMarker.faces, 'facealpha',1.0,...
                 'facecolor','red','facelighting','phong',...
-                'edgecolor','red', 'ButtonDownFcn', { @this.marker_button_down, is_rotated, C });
+                'edgecolor','red', 'ButtonDownFcn', { @this.marker_button_down, C });
             
             this.markers{C(1), C(2)} = ...
                 struct(...
@@ -40,7 +48,9 @@ classdef Grid
                     'marker', hMarker,...
                     'enabled', enabled...
             );
-            this.select(C);
+        
+%             this.select(C); % don't select here: have the parent select
+%             during its logic
             
             % reposition linkages
             linkages = this.get_active_linkages(C);
@@ -52,7 +62,7 @@ classdef Grid
                     h_cylinder = this.cylinder_to_linkage(...
                         centroid, this.markers{target(1), target(2)}.centroid, 1.0);
                     
-                    if ~isnan(this.h_linkages{linkage_idx(1), linkage_idx(2)})
+                    if all(linkage_idx <= size(this.h_linkages)) && ~isempty(this.h_linkages{linkage_idx(1), linkage_idx(2)})
                         delete(this.h_linkages{linkage_idx(1), linkage_idx(2)});
                     end
                     this.h_linkages{linkage_idx(1), linkage_idx(2)} = h_cylinder;
@@ -68,7 +78,7 @@ classdef Grid
                     h_cylinder = this.cylinder_to_linkage(...
                         centroid, this.markers{target(1), target(2)}.centroid, 1.0);
                     
-                    if ~isnan(this.v_linkages{linkage_idx(1), linkage_idx(2)})
+                    if all(linkage_idx <= size(this.v_linkages)) && ~isempty(this.v_linkages{linkage_idx(1), linkage_idx(2)})
                         delete(this.v_linkages{linkage_idx(1), linkage_idx(2)});
                     end
                     this.v_linkages{linkage_idx(1), linkage_idx(2)} = h_cylinder;
@@ -88,7 +98,7 @@ classdef Grid
                 if ~isempty(linkages{1, i})
                     linkage_idx = linkages{1, i}.linkage;
                     delete(this.h_linkages{linkage_idx(1), linkage_idx(2)});
-                    this.h_linkages{linkage_idx(1), linkage_idx(2)} = NaN(1);
+                    this.h_linkages{linkage_idx(1), linkage_idx(2)} = [];
                 else
                     break
                 end
@@ -98,7 +108,7 @@ classdef Grid
                 if ~isempty(linkages{2, i})
                     linkage_idx = linkages{2, i}.linkage;
                     delete(this.v_linkages{linkage_idx(1), linkage_idx(2)});
-                    this.v_linkages{linkage_idx(1), linkage_idx(2)} = NaN(1);
+                    this.v_linkages{linkage_idx(1), linkage_idx(2)} = [];
                 else
                     break
                 end
@@ -124,7 +134,7 @@ classdef Grid
             end
         end
         function select(this, C)
-            assert(this.has_marker(C), 'Grid::select', 'Tried to select an invalid or deleted marker.');
+            assert(this.has_marker(C), 'Tried to select an invalid or deleted marker.');
             
             set(this.markers{C(1), C(2)}.marker, { 'FaceColor', 'EdgeColor' }, { 'cyan', 'cyan' });
         end
@@ -133,7 +143,7 @@ classdef Grid
             % existence
             assert(this.has_marker(C), 'Grid::select', 'Tried to unselect an invalid or deleted marker.');
             
-            set(this.marker{C(1), C(2)}, { 'FaceColor', 'EdgeColor' }, { 'red', 'red' });
+            set(this.markers{C(1), C(2)}.marker, { 'FaceColor', 'EdgeColor' }, { 'red', 'red' });
         end
         function unselect_all(this)
             dims = size(this.markers);
@@ -162,12 +172,12 @@ classdef Grid
                 end
             end
         end
-    end
-    
-    methods(Access = protected)
         function maybe = has_marker(this, C)
             maybe = all(C <= size(this.markers)) && ~isempty(this.markers{C(1), C(2)});
         end
+    end
+    
+    methods(Access = protected)
         % <<Canonical>>
         function active = get_active_linkages(this, C)
             active = cell(2, 0);
@@ -177,7 +187,7 @@ classdef Grid
                 target = C + cardinals(i, :);
                 if ~any(target < 1 | target > size(this.markers)) && ...
                    ~isempty(this.markers{target(1), target(2)})
-                    linkage_idx = C - poslin(-cardinals(i, :));
+                    linkage_idx = C - max(0, -cardinals(i, :));
                     if cardinals(i, 1) ~= 0
                         active{1, num_linkages(1) + 1}.linkage = linkage_idx;
                         active{1, num_linkages(1) + 1}.marker = target;
@@ -192,22 +202,12 @@ classdef Grid
                 end
             end
         end
-        function marker_button_down(this, ~, ~, is_rotated, C)
-            [az, el] = view(v.hAxes);
-            p_0 = get(groot, 'PointerLocation');
-            fig = this.figure_controller.get_hFigure();
-            set(fig.get_hFigure(), 'WindowButtonMotionFcn', ...
-                {@fig.rotate, is_rotated, p_0, [az, el]});
-            set(hFigure, 'WindowButtonUpFcn', { @this.marker_button_up, is_rotated, C });
-        end
-        function marker_button_up(this, ~, ~, is_rotated, C)
-            hFigure = this.grid_controller.get_figure_controller().get_hFigure();
-            set(hFigure, 'WindowButtonMotionFcn', '');
-            set(hFigure, 'WindowButtonUpFcn', '');
-            if ~is_rotated.get()
-                this.grid_controller.select(C);
-            end
-            is_rotated.set(false);
+        function marker_button_down(this, ~, ~, C)
+            % hijack figure callback
+            [~, hFigure] = gcbo;
+            current_callback = get(hFigure, 'WindowButtonUpFcn');
+            current_callback{length(current_callback) + 1} = C;
+            set(hFigure, 'WindowButtonUpFcn', current_callback);
         end
     end
     
@@ -216,8 +216,8 @@ classdef Grid
             [X, Y, Z] = cylinder(r);
             centroid = (A + B) ./ 2;
             h_cylinder = patch(surf2patch(X + centroid(1), Y + centroid(2), (Z - 0.5) * norm(A - B) + centroid(3)));
-            rot = vrrotvec([ 0, 0, 1 ], A - B);
-            rotate(h_cylinder, rot(1:3), rot(4)/pi*180, centroid);
+            n = cross([ 0, 0, 1 ], A - B);
+            rotate(h_cylinder, n/norm(n), acos(dot([ 0, 0, 1 ], A - B)/norm(A - B))/pi*180, centroid);
             drawnow;
         end
     end

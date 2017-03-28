@@ -41,7 +41,7 @@ classdef GeometryController
                     end
                 end
             end
-            centroidish = Hdr.mat * [lower + weight ./ sum(sample(:)); 1]; % adjust by predicted offset, and remap to model space
+            centroidish = this.hdr.mat * [lower + weight ./ sum(sample(:)); 1]; % adjust by predicted offset, and remap to model space
             centroid = centroidish(1:3);
         end
     end

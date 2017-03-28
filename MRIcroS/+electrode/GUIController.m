@@ -9,6 +9,7 @@ classdef GUIController < handle
         grid_controller
         figure_controller
         indicators
+        ghost_indicator
     end
     properties(Access = protected, Constant)
         LABEL_HEIGHT = 16
@@ -29,17 +30,23 @@ classdef GUIController < handle
             [ hFigure, hAxes ] = obj.make_gui_sub();
             obj.prefs_sub();
             
+            obj.figure_controller = electrode.FigureController(obj, hFigure, hAxes, filename, varargin{:});
+            
             set(hFigure, 'ResizeFcn', @(~, ~) obj.f_gui_root.reposition(hFigure));
             set(hFigure, 'KeyPressFcn', @obj.keypress_handler);
              % crucial to make GUI (including figures) before passing to FigureController
-            
-            obj.figure_controller = electrode.FigureController(obj, hFigure, hAxes, filename, varargin{:});
             
             %display results
             obj.add_grid('Unnamed', obj.grid_controller.GRID_DEFAULT(1), obj.grid_controller.GRID_DEFAULT(2));
             obj.f_gui_root.reposition(hFigure);
             obj.figure_controller.redraw();
             obj.figure_controller.view(obj.DEFAULT_AZ_EL(1), obj.DEFAULT_AZ_EL(2));
+            
+            dims = obj.grid_controller.get_current_dims();
+            obj.ghost_indicator = rectangle(obj.f_mutables.ax_grid,...
+                'Position', [ [ 0, 0 ], (dims + ones(size(dims))) .^ -1 ], ...
+                'FaceColor', [ .91, .91, .91 ],...
+                'EdgeColor', [ .86, .86, .86 ]);
         end
         function figure_controller = get_figure_controller(this)
             figure_controller = this.figure_controller;
@@ -56,11 +63,10 @@ classdef GUIController < handle
                 if any(strcmp(ev.Modifier, 'shift'))
 
                 else
-                    this.grid_controller.select(...
-                        this.poll_electrode_idx + direction);
+                    this.select(this.poll_electrode_idx() + direction);
                 end
             elseif strcmp(ev.Key, 'escape')
-                this.grid_controller.unmark_current();
+                this.unmark(this.poll_electrode_idx());
             end
         end
         function new_dims = update_grid_dims(this)
@@ -68,12 +74,14 @@ classdef GUIController < handle
                 str2num(this.f_mutables.h_edit_grid_dimensions_x.String), ...
                 str2num(this.f_mutables.h_edit_grid_dimensions_y.String) ...
             ];
-
-            this.f_mutables.h_electrode_x.Value = max(new_dims(1), this.f_mutables.h_electrode_x.Value);
-            this.f_mutables.h_electrode_y.Value = max(new_dims(2), this.f_mutables.h_electrode_y.Value);
+            
+            new_C = min(new_dims, this.poll_electrode_idx());
             
             this.f_mutables.h_electrode_x.String = 1:new_dims(1);
             this.f_mutables.h_electrode_y.String = 1:new_dims(2);
+            
+            this.f_mutables.h_electrode_x.Value = new_C(1);
+            this.f_mutables.h_electrode_y.Value = new_C(2);
             
             set(this.f_mutables.ax_grid, 'xtick', 0:1/(new_dims(1)+1):1);
             set(this.f_mutables.ax_grid, 'ytick', 0:1/(new_dims(2)+1):1);
@@ -81,7 +89,7 @@ classdef GUIController < handle
             old_dims = this.grid_controller.get_current_dims();
             for i=1:old_dims(1)
                 for j=1:old_dims(2)
-                    if ~isempty(this.indicators{i, j})
+                    if all(size(this.indicators) >= [ i, j ]) && ~isempty(this.indicators{i, j})
                         set(this.indicators{i, j}, 'Position', ...
                             [ [ i-1, j-1 ] .* (new_dims + ones(size(new_dims))) .^ -1,  (new_dims + ones(size(new_dims))) .^ -1 ]);
                     end
@@ -119,24 +127,46 @@ classdef GUIController < handle
             C = this.poll_electrode_idx;
             this.select(C);
             this.grid_controller.mark(centroid, C, enabled);
-        end
-        function select(this, C)
-            this.f_mutables.h_electrode_x.Value = C(1);
-            this.f_mutables.h_electrode_y.Value = C(2);
             
             if this.has_indicator(C)
-                set(this.indicator{C(1), C(2)}, 'FaceColor', 'cyan');
+                set(this.indicators{C(1), C(2)}, 'FaceColor', 'cyan');
             else
                 dims = this.grid_controller.get_current_dims();
                 indicator = rectangle(this.f_mutables.ax_grid,...
                             'Position', [ (C - ones(size(C))) .* (dims + ones(size(dims))) .^ -1, (dims + ones(size(dims))) .^ -1 ], ...
                             'FaceColor', 'cyan');
                 set(indicator, 'ButtonDownFcn', @(~, ~) this.select(C));
+                this.indicators{C(1), C(2)} = indicator;
             end
         end
-        function unselect(this, coord)
-            if this.has_indicator(coord)
-                set(this.indicators{coord(1), coord(2)}, 'FaceColor', 'red');
+        function select(this, C)
+            if this.grid_controller.in_range(C)
+                this.f_mutables.h_electrode_x.Value = C(1);
+                this.f_mutables.h_electrode_y.Value = C(2);
+
+                if this.grid_controller.select_if_exists(C)
+                    % a view inconsistency will (and should really) trigger an
+                    % error
+                    set(this.indicators{C(1), C(2)}, 'FaceColor', 'cyan');
+                    set(this.ghost_indicator, 'Visible', 'off');
+                else
+                    % ghost-select unmarked spaces
+                    dims = this.grid_controller.get_current_dims();
+                    set(this.ghost_indicator, 'Position', [ (C - ones(size(C))) .* (dims + ones(size(dims))) .^ -1, (dims + ones(size(dims))) .^ -1 ]);
+                    set(this.ghost_indicator, 'Visible', 'on');
+                end
+            end
+        end
+%         function ghost_select(this, C)
+%             % select iff there isn't a marker at C. The caller must have
+%             % that knowledge to distinguish calling this::ghost_select vs.
+%             % this::select
+%             this.f_mutables.h_electrode_x.Value = C(1);
+%             this.f_mutables.h_electrode_y.Value = C(2);
+%         end
+        function unselect(this, C)
+            if this.has_indicator(C)
+                set(this.indicators{C(1), C(2)}, 'FaceColor', 'red');
             end
             
             set(this.f_mutables.h_unmark_button, 'Visible', 'Off');
@@ -151,7 +181,9 @@ classdef GUIController < handle
             end
         end
         function unmark(this, C)
-            if this.has_indicator(C)
+            if this.grid_controller.unmark_if_exists(C)
+                % again, a view inconsistency will (and should really) 
+                % trigger an error
                 delete(this.indicators{C(1), C(2)});
             end
             this.indicators{C(1), C(2)} = [];
@@ -168,7 +200,7 @@ classdef GUIController < handle
     end
     methods(Access = protected)
         function maybe = has_indicator(this, C)
-            maybe = all(C < size(this.indicators)) && ~empty(this.indicators{C(1), C(2)});
+            maybe = all(C <= size(this.indicators)) && ~isempty(this.indicators{C(1), C(2)});
         end
         function dims = get_characteristic_dims(this)
             dims = min(...
