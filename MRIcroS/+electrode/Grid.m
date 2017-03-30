@@ -4,6 +4,7 @@ classdef Grid < handle
         markers
         h_linkages
         v_linkages
+        selected = NaN(1, 2)
         dims
     end
     properties(Access = public, Constant)
@@ -14,11 +15,40 @@ classdef Grid < handle
     end
     methods(Access = public)
         function obj = Grid(name, width, height)
+            if any([width, height] == [0, 0])
+                error('Grid width and height must be non-negative integer.');
+            end
             obj.name = name;
             obj.markers = {}; % cell(width, height)
             obj.h_linkages = {}; % NaN(width-1, height)
             obj.v_linkages = {}; % NaN(width, height-1) % fenceposts!
             obj.dims = [ width, height ];
+            obj.selected = [ 1, 1 ];
+        end
+        
+        function selected = get_local_selected(this)
+            selected = this.selected;
+        end
+        
+        function coords = get_marked_coords(this)
+            coords = {};
+            for i = 1:size(this.markers, 1)
+                for j = 1:size(this.markers, 2)
+                    if ~isempty(this.markers{i, j})
+                        coords{length(coords) + 1} = [i, j];
+                    end
+                end
+            end
+        end
+        
+        function selected = unselect_local_selected(this)
+            selected = this.selected;
+            if ~any(isnan(this.selected))
+                if this.has_marker(this.selected)
+                    this.unselect(this.selected);
+                end
+            end
+            % else % no-op
         end
         
         % [OBS] Purely view manipulations: do not talk to model

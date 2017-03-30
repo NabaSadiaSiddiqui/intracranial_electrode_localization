@@ -32,12 +32,15 @@ classdef FloatingControl < handle
             end
             obj.float = obj.offset(:,2) < 0 | obj.offset(:,2) == 0 & obj.offset(:,1) < 0;
         end
-        function this = add_child(this, child)
-            this.children = [ this.children, child ];
-            set(child, 'Parent', this.h);
+        function h = get_root(this)
+            h = this.h;
         end
-        function reposition(this, hFig)
-            this.sub_reposition([hFig.Position(3:4).', [ 1.0; 1.0 ]], false);
+        function child = add_child(this, child)
+            this.children = [ this.children, child ];
+            set(child.h, 'Parent', this.h);
+        end
+        function reposition(this, root_abs_area)
+            this.sub_reposition([root_abs_area, [ 1.0; 1.0 ]], false);
         end
     end
     methods(Access = protected)

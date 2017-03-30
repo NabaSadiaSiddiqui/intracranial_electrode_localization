@@ -17,6 +17,7 @@ classdef FigureController < handle
             % BSD License: https://www.mathworks.com/matlabcentral/fileexchange/56788-mricros
             % With modifications licensed under license found at:
             % [project_root]/LICENSE.txt
+            axes(hAxes);
             
             obj.hFigure = hFigure;
             obj.hAxes = hAxes;

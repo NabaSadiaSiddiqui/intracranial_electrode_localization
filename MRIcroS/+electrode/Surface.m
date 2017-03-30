@@ -39,6 +39,7 @@ classdef Surface < handle
             % BSD License: https://www.mathworks.com/matlabcentral/fileexchange/56788-mricros
             % With modifications licensed under license found at:
             % [project_root]/LICENSE.txt
+            axes(hAxes); % prevent against stupid gca-bound functions
             if ( this.prefs.backFaceLighting == 1)
                 bf = 'reverselit';
             else
@@ -76,7 +77,7 @@ classdef Surface < handle
                         'ButtonDownFcn', @this.patch_hit);
                 end
             else 
-                this.P = patch('vertices', this.vertices,...
+                this.P = patch(hAxes, 'vertices', this.vertices,...
                     'faces', this.faces, 'facealpha',this.alph,...
                     'facecolor',this.clr,'facelighting','phong',...
                     'edgecolor',ec,'edgealpha', ea, ...
@@ -84,7 +85,7 @@ classdef Surface < handle
                     'ButtonDownFcn', @this.patch_hit...
                 );
             end
-            set(gca,'DataAspectRatio',[1 1 1])
+            set(hAxes,'DataAspectRatio',[1 1 1])
             axis vis3d off; %tight
             % h = rotate3d;
             rotate3d off;

@@ -16,6 +16,8 @@ classdef GUIController < handle
         INPUT_HEIGHT = 22
         DEFAULT_AZ_EL = [ 45, 45 ]
         SZ = [ 960, 680 ]
+        GRID_DEFAULT = [ 8, 8 ]
+        NAME_DEFAULT = 'Unnamed'
     end
     
     methods(Access = public)
@@ -32,19 +34,18 @@ classdef GUIController < handle
             
             obj.figure_controller = electrode.FigureController(obj, hFigure, hAxes, filename, varargin{:});
             
-            set(hFigure, 'ResizeFcn', @(~, ~) obj.f_gui_root.reposition(hFigure));
+            set(hFigure, 'ResizeFcn', @(~, ~) obj.reposition_all());
             set(hFigure, 'KeyPressFcn', @obj.keypress_handler);
              % crucial to make GUI (including figures) before passing to FigureController
             
             %display results
-            obj.add_grid('Unnamed', obj.grid_controller.GRID_DEFAULT(1), obj.grid_controller.GRID_DEFAULT(2));
-            obj.f_gui_root.reposition(hFigure);
+            obj.add_default_grid();
+            obj.reposition_all();
             obj.figure_controller.redraw();
             obj.figure_controller.view(obj.DEFAULT_AZ_EL(1), obj.DEFAULT_AZ_EL(2));
             
-            dims = obj.grid_controller.get_current_dims();
             obj.ghost_indicator = rectangle(obj.f_mutables.ax_grid,...
-                'Position', [ [ 0, 0 ], (dims + ones(size(dims))) .^ -1 ], ...
+                'Position', [ 0, 0, 1, 1 ], ...
                 'FaceColor', [ .91, .91, .91 ],...
                 'EdgeColor', [ .86, .86, .86 ]);
         end
@@ -69,12 +70,19 @@ classdef GUIController < handle
                 this.unmark(this.poll_electrode_idx());
             end
         end
+        function update_grid_name(this, new_name)
+            this.f_mutables.h_grid_name.String = this.new_name;
+            this.f_mutables.h_grid_dropdown.String{this.f_mutables.h_grid_dropdown.Value} = this.new_name;
+            this.grid_controller.update_grid_name(new_name);
+        end
         function new_dims = update_grid_dims(this)
             new_dims = [...
                 str2num(this.f_mutables.h_edit_grid_dimensions_x.String), ...
                 str2num(this.f_mutables.h_edit_grid_dimensions_y.String) ...
             ];
             
+            this.grid_controller.update_grid_dims(new_dims);
+        
             new_C = min(new_dims, this.poll_electrode_idx());
             
             this.f_mutables.h_electrode_x.String = 1:new_dims(1);
@@ -83,31 +91,46 @@ classdef GUIController < handle
             this.f_mutables.h_electrode_x.Value = new_C(1);
             this.f_mutables.h_electrode_y.Value = new_C(2);
             
-            set(this.f_mutables.ax_grid, 'xtick', 0:1/(new_dims(1)+1):1);
-            set(this.f_mutables.ax_grid, 'ytick', 0:1/(new_dims(2)+1):1);
+            xlim(this.f_mutables.ax_grid, [0, new_dims(1)]);
+            ylim(this.f_mutables.ax_grid, [0, new_dims(2)]);
+        end
+        function add_default_grid(this)
+            % mutate model
+            this.grid_controller.add_grid(this.NAME_DEFAULT, this.GRID_DEFAULT(1),  this.GRID_DEFAULT(2)); % mutate model
+            this.f_mutables.h_grid_dropdown.String{length(this.f_mutables.h_grid_dropdown.String) + 1} = this.NAME_DEFAULT;
+            this.switch_grid(length(this.f_mutables.h_grid_dropdown.String));
+        end
+        function switch_grid(this, idx)
+            this.grid_controller.unselect_last_selected();
             
-            old_dims = this.grid_controller.get_current_dims();
-            for i=1:old_dims(1)
-                for j=1:old_dims(2)
-                    if all(size(this.indicators) >= [ i, j ]) && ~isempty(this.indicators{i, j})
-                        set(this.indicators{i, j}, 'Position', ...
-                            [ [ i-1, j-1 ] .* (new_dims + ones(size(new_dims))) .^ -1,  (new_dims + ones(size(new_dims))) .^ -1 ]);
-                    end
+            this.f_mutables.h_grid_dropdown.Value = idx;
+            
+            grid = this.grid_controller.get_grid(idx);
+            coords = grid.get_marked_coords();
+            for i = 1:size(this.indicators, 1)
+                for j = 1:size(this.indicators, 2)
+                    delete(this.indicators{ i, j });
+                    this.indicators{i, j} = [];
                 end
             end
-        end
-        function add_grid(this, name, width, height)
-            this.grid_controller.add_grid(name, width, height); % mutate model
+            for i = 1:length(coords)
+                this.mark_indicator(coords{i});
+                this.unselect(coords{i});
+            end
             
-            this.f_mutables.h_grid_dropdown.String = [ this.f_mutables.h_grid_dropdown.String, name ];
-            this.f_mutables.h_grid_name.String = name;
-            this.f_mutables.h_edit_grid_dimensions_x.String = width;
-            this.f_mutables.h_edit_grid_dimensions_y.String = height;
-            this.f_mutables.h_electrode_x.String = 1:width;
-            this.f_mutables.h_electrode_y.String = 1:height;
+            this.f_mutables.h_grid_name.String = grid.name;
+            this.f_mutables.h_electrode_x.String = 1:grid.dims(1);
+            this.f_mutables.h_electrode_y.String = 1:grid.dims(2);
+            this.f_mutables.h_edit_grid_dimensions_x.String = grid.dims(1);
+            this.f_mutables.h_edit_grid_dimensions_y.String = grid.dims(2);
+            this.f_mutables.h_electrode_x.Value = grid.selected(1);
+            this.f_mutables.h_electrode_y.Value = grid.selected(2);
+            set(this.f_mutables.ax_grid, 'xtick', 1:grid.dims(1));
+            set(this.f_mutables.ax_grid, 'ytick', 1:grid.dims(2));
+            xlim(this.f_mutables.ax_grid, [ 0, grid.dims(1) ]);
+            ylim(this.f_mutables.ax_grid, [ 0, grid.dims(2) ]);
             
-            set(this.f_mutables.ax_grid, 'xtick', 0:1/(width+1):1);
-            set(this.f_mutables.ax_grid, 'ytick', 0:1/(height+1):1);
+            this.select(grid.selected);
         end
         % <<Canonical>>
         function prefs = get_prefs(this)
@@ -125,15 +148,16 @@ classdef GUIController < handle
         end
         function mark(this, centroid, enabled)
             C = this.poll_electrode_idx;
-            this.select(C);
             this.grid_controller.mark(centroid, C, enabled);
-            
+            this.mark_indicator(C);
+            this.select(C);
+        end
+        function mark_indicator(this, C)
             if this.has_indicator(C)
                 set(this.indicators{C(1), C(2)}, 'FaceColor', 'cyan');
             else
-                dims = this.grid_controller.get_current_dims();
                 indicator = rectangle(this.f_mutables.ax_grid,...
-                            'Position', [ (C - ones(size(C))) .* (dims + ones(size(dims))) .^ -1, (dims + ones(size(dims))) .^ -1 ], ...
+                            'Position', [ (C - ones(size(C))), 1.0, 1.0 ], ...
                             'FaceColor', 'cyan');
                 set(indicator, 'ButtonDownFcn', @(~, ~) this.select(C));
                 this.indicators{C(1), C(2)} = indicator;
@@ -149,10 +173,10 @@ classdef GUIController < handle
                     % error
                     set(this.indicators{C(1), C(2)}, 'FaceColor', 'cyan');
                     set(this.ghost_indicator, 'Visible', 'off');
+                    set(this.f_mutables.h_unmark_button, 'Visible', 'on');
                 else
                     % ghost-select unmarked spaces
-                    dims = this.grid_controller.get_current_dims();
-                    set(this.ghost_indicator, 'Position', [ (C - ones(size(C))) .* (dims + ones(size(dims))) .^ -1, (dims + ones(size(dims))) .^ -1 ]);
+                    set(this.ghost_indicator, 'Position', [ C - ones(size(C)), 1.0, 1.0 ] );
                     set(this.ghost_indicator, 'Visible', 'on');
                 end
             end
@@ -208,28 +232,27 @@ classdef GUIController < handle
                 size(this.indicators)...
             ); % take the min of grid dims and actual filled indicators to save some time
         end
-        function refloat_panels(this)
-            this.f_mutables.fFigurePanel.reposition(this.figure_controller.get_hFigure());
-            this.f_gui_root.reposition(this.figure_controller.get_hFigure());
+        function reposition_all(this)
+            this.f_mutables.fAxes.reposition(this.SZ.');
+            this.f_mutables.f_gui_root.reposition(this.SZ.');
         end
         function [ hFigure, hAxes ] = make_gui_sub(this)
-            GRID_DEFAULT = this.grid_controller.GRID_DEFAULT;
+            screensize = get(0,'ScreenSize');
+            margin = [ceil((screensize(3)-this.SZ(1))/2) ceil((screensize(4)-this.SZ(2))/2)];
+            hFigure = figure('MenuBar','none','Toolbar','none','HandleVisibility','on', ...
+                'Tag', mfilename,'Name', mfilename, 'NumberTitle','off', ...
+             'Color', get(0, 'defaultuicontrolbackgroundcolor'), ...
+             'Position', [ margin, this.SZ ]);
+            set(hFigure, 'Renderer', 'OpenGL');
+            
             this.f_mutables.h_edit_grid_dimensions_x =  uicontrol('style','edit');
             this.f_mutables.h_edit_grid_dimensions_y =  uicontrol('style','edit');
-            this.f_mutables.h_grid_dropdown = uicontrol('style', 'popup');
-            % obj.f_mutables.h_grid_adder = uicontrol('style', 'pushbutton', 'string', 'Add Grid', 'Callback', @(~, ~) v_w.get().add_grid('Unnamed', 8, 8));
-            this.f_mutables.h_grid_name = uicontrol('style','edit', 'HorizontalAlignment', 'Left');
+            this.f_mutables.h_grid_dropdown = uicontrol('style', 'popup', 'Callback', @(src, ~) this.switch_grid(src.Value));
+            % obj.f_mutables.h_grid_adder = uicontrol('style', 'pushbutton', 'string', 'Add Grid', 'Callback', @(~, ~) v_w.get().add_grid(this.NAME_DEFAULT, 8, 8));
+            this.f_mutables.h_grid_name = uicontrol('style','edit', 'HorizontalAlignment', 'Left', 'Callback', @(src, ~) this.update_grid_name(src.String));
             % v.h_push_button_grid_dimensions = uicontrol('style', 'pushbutton', 'string', 'Update Grid', 'callback', {@setup_electrode_grid_callback, v.h_edit_grid_dimensions_x, v.h_edit_grid_dimensions_y}, 'position', [0.35 0.65 0.15 0.1]);
 
-            this.f_mutables.ax_grid = axes('box', 'off',...
-                    'xtick', 0:1/(GRID_DEFAULT(1)+1):1, 'ytick', 0:1/(GRID_DEFAULT(2)+1):1, ...
-                    'xgrid', 'on', 'ygrid', 'on');
-            set(this.f_mutables.ax_grid, 'YTickLabel', []);
-            set(this.f_mutables.ax_grid, 'XTickLabel', []);
-            xlim(this.f_mutables.ax_grid, [0, 1]);
-            ylim(this.f_mutables.ax_grid, [0, 1]);
-
-            this.f_mutables.h_unmark_button = uicontrol('style', 'pushbutton', 'string', 'Unmark', 'Visible', 'Off', 'Callback', @(~, ~) this.grid_controller.unmark_current());
+            this.f_mutables.h_unmark_button = uicontrol('style', 'pushbutton', 'string', 'Unmark', 'Visible', 'Off', 'Callback', @(~, ~) this.unmark(this.poll_electrode_idx()));
 
             % uicontrol('style','text', 'position',[0.005 0.55 0.15 0.05], 'string', 'Pick an electrode');
             % v.h_electrode_drop_down = uicontrol('style','popup');
@@ -238,35 +261,21 @@ classdef GUIController < handle
             this.f_mutables.h_electrode_y = uicontrol('style', 'popup', 'Callback', ...
                 @(src, ev) this.select([ this.f_mutables.h_electrode_x.Value, this.f_mutables.h_electrode_y.Value ]));
 
-            set(this.f_mutables.h_electrode_x, 'string', 1:GRID_DEFAULT(1));
-            set(this.f_mutables.h_electrode_y, 'string', 1:GRID_DEFAULT(2));
-            
-            screensize = get(0,'ScreenSize');
-            margin = [ceil((screensize(3)-this.SZ(1))/2) ceil((screensize(4)-this.SZ(2))/2)];
-            hFigure = figure('MenuBar','none','Toolbar','none','HandleVisibility','on', ...
-                'Tag', mfilename,'Name', mfilename, 'NumberTitle','off', ...
-             'Color', get(0, 'defaultuicontrolbackgroundcolor'));
-            set(hFigure, 'Renderer', 'OpenGL');
-            hAxes = axes('HandleVisibility','on');
-            
-            this.f_mutables.fFigurePanel = gui.FloatingControl(...
-                uipanel(), [ 0; 0 ], [[ -240, 1.0 ]; [ 0, 1.0 ]], [ ...
-                    gui.FloatingControl(...
-                        hAxes, zeros(2, 2), [[ 0, 1 ]; [ 0, 1 ]]...
-                    ) ...
-                ] ...
+            set(this.f_mutables.h_electrode_x, 'string', 1:this.GRID_DEFAULT(1));
+            set(this.f_mutables.h_electrode_y, 'string', 1:this.GRID_DEFAULT(2));
+            this.f_mutables.fAxes = gui.FloatingControl(axes('HandleVisibility', 'on', 'Parent', hFigure),...
+                [ 0; 0 ], [[ -240, 1.0 ]; [ 0, 1.0 ]]...
             );
-            gui.FloatingControl(hFigure, ...
-                [ margin(1), margin(2) ], [ this.SZ(1), this.SZ(2) ], [ ...
-                    this.f_mutables.fFigurePanel ...
-                ] ...
-            );
-            this.f_gui_root = gui.FloatingControl(uipanel(), ...
+            hAxes = this.f_mutables.fAxes.get_root();
+        
+            this.f_mutables.f_gui_root = gui.FloatingControl(uipanel('Parent', hFigure), ...
                 [ -240; 0.0 ], [[ 0, 1.0 ]; [ 0, 1.0 ]], [ ...
                     gui.FloatingControl(this.f_mutables.h_grid_dropdown, ...
-                        [ 10; -25 ], [[ -10, 1.0 ]; [ this.LABEL_HEIGHT, 0.0 ] ]), ...
+                        [ 10; -25 ], [[ -60, 1.0 ]; [ this.LABEL_HEIGHT, 0.0 ] ]), ...
+                    gui.FloatingControl(uicontrol('style', 'pushbutton', 'string', 'Add Grid', 'callback', @(~, ~) this.add_default_grid()),...
+                        [ -60; -32 ], [[ -10, 1.0 ]; [ this.INPUT_HEIGHT, 0.0 ]]), ...
                     gui.FloatingControl(uipanel('BorderType', 'none'), ...
-                        [ 10; -175 ], [[ -10, 1.0 ]; [ 140, 0.0 ]], [...
+                        [ 10; -195 ], [[ -10, 1.0 ]; [ 160, 0.0 ]], [...
                             gui.FloatingControl(uicontrol('style','text', 'HorizontalAlignment', 'Left', 'string','Grid Properties'), ...
                                 [ 0; -25 ], [[ 0, 1.0 ]; [ this.LABEL_HEIGHT, 0.0 ] ]), ...
                             gui.FloatingControl(uicontrol('style','text', 'HorizontalAlignment', 'Left', 'string','Name:'), ...
@@ -282,13 +291,13 @@ classdef GUIController < handle
                                     gui.FloatingControl(this.f_mutables.h_edit_grid_dimensions_y, ...
                                         [[ 0, 0.5 ]; [ 0, 0.0 ]], [[ 0, 1.0 ]; [ 0, 1.0 ]]) ...
                                 ]), ...
-                            gui.FloatingControl(uicontrol('style', 'pushbutton', 'string', 'Update Grid', 'callback', @(~, ~) this.grid_controller.update_grid_dims()),...
+                            gui.FloatingControl(uicontrol('style', 'pushbutton', 'string', 'Update Grid Dims', 'callback', @(~, ~) this.update_grid_dims()),...
                                 [ 90; -100 ], [[ 0, 1.0 ]; [ this.INPUT_HEIGHT, 0.0 ]])
                         ]), ...
                     gui.FloatingControl(uicontrol('style', 'text', 'HorizontalAlignment', 'Left', 'string', 'Pick an electrode'), ...
-                        [ 10; -165 ], [[ -10, 1.0 ]; [ this.INPUT_HEIGHT, 0.0 ]]), ...
+                        [ 10; -185 ], [[ -10, 1.0 ]; [ this.INPUT_HEIGHT, 0.0 ]]), ...
                     gui.FloatingControl(uipanel('BorderType', 'none'), ...
-                        [ 10; -205 ], [[ -10, 1.0 ]; [ 2*this.INPUT_HEIGHT, 0.0 ]], [...
+                        [ 10; -225 ], [[ -10, 1.0 ]; [ 2*this.INPUT_HEIGHT, 0.0 ]], [...
                             gui.FloatingControl(this.f_mutables.h_electrode_x, ...
                                 [0; 0], [[ 0, 0.5 ]; [ 0, 1.0 ]]), ...
                             gui.FloatingControl(this.f_mutables.h_electrode_y, ...
@@ -296,10 +305,21 @@ classdef GUIController < handle
                             gui.FloatingControl(this.f_mutables.h_unmark_button, ...
                                 [ 0; 1.0], [[ 0, 1.0 ]; [ this.INPUT_HEIGHT, 0 ]])...
                         ]), ...
-                    gui.FloatingControl(this.f_mutables.ax_grid, ...
-                        [ 10; 10 ], [[ -10, 1.0 ]; [ 240, 0.0 ]]), ...
+                    gui.FloatingControl(uicontrol('style', 'checkbox', 'Callback', @this.grid_controller.disable_current), ...
+                        [ 10; -250 ], [ 15; this.LABEL_HEIGHT ]), ...
+                    gui.FloatingControl(uicontrol('style', 'text', 'string', 'Disable electrode', 'HorizontalAlignment', 'Left'), ...
+                        [ 30; -250 ], [[ 0, 1.0 ]; [ this.LABEL_HEIGHT, 0.0 ]])...
                 ]...
             );
+        
+            this.f_mutables.ax_grid = this.f_mutables.f_gui_root.add_child(gui.FloatingControl(axes('box', 'off',...
+                    'xtick', 0:this.GRID_DEFAULT(1), 'ytick', 0:this.GRID_DEFAULT(2), ...
+                    'xgrid', 'on', 'ygrid', 'on'), ...
+                [ 10; 10 ], [[ -10, 1.0 ]; [ 240, 0.0 ]])).get_root();
+            set(this.f_mutables.ax_grid, 'YTickLabel', []);
+            set(this.f_mutables.ax_grid, 'XTickLabel', []);
+            xlim(this.f_mutables.ax_grid, [0, this.GRID_DEFAULT(1)]);
+            ylim(this.f_mutables.ax_grid, [0, this.GRID_DEFAULT(2)]);
         end
         function make_menus_sub(this)
             showOpts = 1;
