@@ -4,6 +4,9 @@ classdef GeometryController
        vol
        hdr
     end
+    properties(Access = protected, Constant)
+        DEFAULT_RADIUS = 3
+    end
     
     methods(Access = public)
         function obj = GeometryController(surf, vol, hdr)
