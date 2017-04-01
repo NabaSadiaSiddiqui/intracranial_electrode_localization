@@ -21,6 +21,9 @@ classdef GeometryController
                 centroid = this.surf.marker_by_point(P);
             end
         end
+        function set_volume_trace_radius(this, radius)
+            disp(radius);
+        end
     end
     methods(Access = protected)
         function centroid = marker_by_point_vol(this, P)
