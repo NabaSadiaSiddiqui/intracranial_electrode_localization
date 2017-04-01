@@ -48,6 +48,16 @@ classdef GridController < handle
             idx = this.get_current_grid();
             this.grids{idx}.name = new_name;
         end
+        % <<Canonical>>
+        function num = get_num_grids(this)
+            num = length(this.grids);
+        end
+        function delete_grid(this, idx)
+            if 1 <= idx && idx <= length(this.grids)
+                this.grids{idx}.unmark_all();
+                this.grids(idx) = []; % shift out of cell array
+            end
+        end
 %         function unmark_current(this)
 %             idx = this.get_current_grid();
 %             if ~any(isnan(this.selected)) % &&...

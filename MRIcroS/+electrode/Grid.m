@@ -148,15 +148,15 @@ classdef Grid < handle
             dims = size(this.markers);
             for i = 1:dims(1)
                 for j = 1:dims(2)
-                    if this.has_marker(i, j)
-                        delete(this.markers{i, j});
+                    if this.has_marker([i, j])
+                        delete(this.markers{i, j}.marker);
                         this.markers{i, j} = [];
                     end
-                    if all(size(this.h_linkages) <= [i, j]) && ~isempty(this.h_linkages{i, j})
+                    if all(size(this.h_linkages) >= [i, j]) && ~isempty(this.h_linkages{i, j})
                         delete(this.h_linkages{i, j});
                         this.h_linkages{i, j} = [];
                     end
-                    if all(size(this.v_linkages) <= [i, j]) && ~isempty(this.v_linkages{i, j})
+                    if all(size(this.v_linkages) >= [i, j]) && ~isempty(this.v_linkages{i, j})
                         delete(this.v_linkages{i, j});
                         this.v_linkages{i, j} = [];
                     end

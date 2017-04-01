@@ -26,10 +26,10 @@ classdef GeometryController
         function centroid = marker_by_point_vol(this, P)
             % identify 3mm x 3mm x 3mm rhombohedron
             % affine -> linear (dispose of translation)
-            lin = this.hdr.Mat(1:3, 1:3);
+            lin = this.hdr.mat(1:3, 1:3);
             L = round(3 ./ sqrt(sum(lin.^2, 1))).'; % pixels in respective direction to attain 3mm edge length
-            P_prime = round(this.hdr.Mat \ [P.'; 1]); % remap click on surf to image coordinate
-            lower = P_prime - ceil(L./2);
+            P_prime = round(this.hdr.mat \ [P.'; 1]); % remap click on surf to image coordinate
+            lower = P_prime(1:3) - ceil(L./2);
             sample = this.vol(lower(1):lower(1)+L(1)-1, lower(2):lower(2)+L(2)-1, lower(3):lower(3)+L(3)-1);
             
             % weighted average
