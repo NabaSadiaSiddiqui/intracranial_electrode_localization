@@ -81,13 +81,15 @@ classdef Grid < handle
             marked_coords = this.get_marked_coords();
             for i = 1:length(marked_coords)
                 % view manip
-                set(this.markers{marked_coords{i}}.marker,...
+                coord = marked_coords{i};
+                set(this.markers{coord(1), coord(2)}.marker,...
                     { 'FaceColor', 'EdgeColor' }, ...
                     { new_color, new_color }...
                 );
             end
-            
+            % lazily change the color to the new one
             this.color = new_color; % model manip
+            this.select(this.selected);
         end
         
         % [OBS] Purely view manipulations: do not talk to model
@@ -110,7 +112,8 @@ classdef Grid < handle
                     'faces', pMarker.faces, 'facealpha',1.0,...
                     'facecolor',this.color,'facelighting','phong',...
                     'edgecolor',this.color, 'ButtonDownFcn', { @this.marker_button_down, C });
-                % hLabel = text(centroid(1), centroid(2), centroid(3), ['(', C(1), ',', C(2), ')']);
+                centroid = double(centroid);
+%                 hLabel = text(centroid(1), centroid(2), centroid(3), sprintf('(%d,%d)', C(1), C(2)));
 
                 this.markers{C(1), C(2)} = ...
                     struct(...
@@ -118,6 +121,7 @@ classdef Grid < handle
                         'marker', hMarker,...
                         'enabled', enabled...
                 );
+%                         'label', hLabel,...
 
     %             this.select(C); % don't select here: have the parent select
     %             during its logic
@@ -161,7 +165,7 @@ classdef Grid < handle
         end
         function unmark(this, C)
             delete(this.markers{C(1), C(2)}.marker);
-            % delete(this.markers{C(1), C(2)}.label);
+%             delete(this.markers{C(1), C(2)}.label);
             this.markers{C(1), C(2)} = [];
 
             % delete active linkages around this marker
@@ -193,7 +197,7 @@ classdef Grid < handle
                 for j = 1:dims(2)
                     if this.has_enabled_marker([i, j])
                         delete(this.markers{i, j}.marker);
-                        % delete(this.markers{i, j}.label);
+%                         delete(this.markers{i, j}.label);
                         this.markers{i, j} = [];
                     end
                     if all(size(this.h_linkages) >= [i, j]) && ~isempty(this.h_linkages{i, j})
