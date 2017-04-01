@@ -6,9 +6,11 @@ classdef Grid < handle
         v_linkages
         selected = NaN(1, 2)
         dims
+        color
     end
     properties(Access = public, Constant)
         MARKER_RAD = 3.0 % mm-radius
+        DEFAULT_MARKER_COLOR = [ 1.0, 0, 0] % red
     end
     properties(Access = protected)
         figure_controller
@@ -24,6 +26,7 @@ classdef Grid < handle
             obj.v_linkages = {}; % NaN(width, height-1) % fenceposts!
             obj.dims = [ width, height ];
             obj.selected = [ 1, 1 ];
+            obj.color = obj.DEFAULT_MARKER_COLOR;
         end
         
         function selected = get_local_selected(this)
@@ -38,7 +41,7 @@ classdef Grid < handle
             coords = {};
             for i = 1:size(this.markers, 1)
                 for j = 1:size(this.markers, 2)
-                    if ~isempty(this.markers{i, j})
+                    if this.has_enabled_marker([i, j])
                         coords{length(coords) + 1} = [i, j];
                     end
                 end
@@ -74,6 +77,19 @@ classdef Grid < handle
             end
         end
         
+        function change_color(this, new_color)
+            marked_coords = this.get_marked_coords();
+            for i = 1:length(marked_coords)
+                % view manip
+                set(this.markers{marked_coords{i}}.marker,...
+                    { 'FaceColor', 'EdgeColor' }, ...
+                    { new_color, new_color }...
+                );
+            end
+            
+            this.color = new_color; % model manip
+        end
+        
         % [OBS] Purely view manipulations: do not talk to model
         % this.markers is the model for the selected markers, so
         % manipulating the this.markers modifies the model necessarily.
@@ -92,8 +108,8 @@ classdef Grid < handle
                 pMarker = surf2patch(X, Y, Z);
                 hMarker = patch('vertices', pMarker.vertices,...
                     'faces', pMarker.faces, 'facealpha',1.0,...
-                    'facecolor','red','facelighting','phong',...
-                    'edgecolor','red', 'ButtonDownFcn', { @this.marker_button_down, C });
+                    'facecolor',this.color,'facelighting','phong',...
+                    'edgecolor',this.color, 'ButtonDownFcn', { @this.marker_button_down, C });
                 % hLabel = text(centroid(1), centroid(2), centroid(3), ['(', C(1), ',', C(2), ')']);
 
                 this.markers{C(1), C(2)} = ...
@@ -194,14 +210,21 @@ classdef Grid < handle
         function select(this, C)
             assert(this.has_enabled_marker(C), 'Tried to select an invalid or deleted marker.');
             
-            set(this.markers{C(1), C(2)}.marker, { 'FaceColor', 'EdgeColor' }, { 'cyan', 'cyan' });
+            hsv_grid_color = rgb2hsv(this.color);
+            inverse_grid_color = hsv2rgb([ mod(hsv_grid_color(1) + 0.5, 1.0), hsv_grid_color(2:3)]);
+            set(this.markers{C(1), C(2)}.marker,...
+                { 'FaceColor', 'EdgeColor' },...
+                { inverse_grid_color, inverse_grid_color }...
+            );
         end
         function unselect(this, C)
             % on the fence if this should be so strong as to assert marker
             % existence
             assert(this.has_enabled_marker(C), 'Grid::select', 'Tried to unselect an invalid or deleted marker.');
             
-            set(this.markers{C(1), C(2)}.marker, { 'FaceColor', 'EdgeColor' }, { 'red', 'red' });
+            set(this.markers{C(1), C(2)}.marker,...
+                { 'FaceColor', 'EdgeColor' },...
+                { this.color, this.color });
         end
         function unselect_all(this)
             dims = size(this.markers);
@@ -209,7 +232,8 @@ classdef Grid < handle
                 for j = 1:dims(2)
                     if this.has_enabled_marker(i, j)
                         set(this.markers{i, j}, ...
-                            { 'FaceColor', 'EdgeColor' }, { 'red', 'red' });
+                            { 'FaceColor', 'EdgeColor' },...
+                            { this.color, this.color });
                     end
                 end
             end
