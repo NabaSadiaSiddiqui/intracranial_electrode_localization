@@ -242,6 +242,9 @@ classdef GUIController < handle
                 end
             end
         end
+        function radius = get_volume_trace_radius(this)
+            radius = this.f_mutables.h_electrode_radius.Value;
+        end
     end
     methods(Access = protected)
         function maybe = has_indicator(this, C)
@@ -281,6 +284,8 @@ classdef GUIController < handle
                 @(src, ev) this.select([ this.f_mutables.h_electrode_x.Value, this.f_mutables.h_electrode_y.Value ]));
             this.f_mutables.h_electrode_y = uicontrol('style', 'popup', 'Callback', ...
                 @(src, ev) this.select([ this.f_mutables.h_electrode_x.Value, this.f_mutables.h_electrode_y.Value ]));
+            this.f_mutables.h_electrode_radius = uicontrol('Style', 'slider', 'Min', 1, 'Max', 10,'Value', 3, 'SliderStep', [1/9, 1/9]);
+
             this.f_mutables.h_toggle_enable = uicontrol('style', 'checkbox', 'Callback', @(src, ~) this.grid_controller.toggle_selected(~src.Value));
             
             set(this.f_mutables.h_electrode_x, 'string', 1:this.GRID_DEFAULT(1));
@@ -335,7 +340,7 @@ classdef GUIController < handle
                         [ 30; -290 ], [[ 0, 1.0 ]; [ this.LABEL_HEIGHT, 0.0 ]]), ...
                     gui.FloatingControl(uicontrol('style', 'text', 'HorizontalAlignment', 'Left', 'string', 'Select volume trace radius'), ...
                         [ 10; -350 ], [[ -10, 1.0]; [ this.INPUT_HEIGHT, 0.0 ]]), ...
-                    gui.FloatingControl(uicontrol('Style', 'slider', 'Min', 1, 'Max', 10,'Value', 3, 'SliderStep', [1/9, 1/9], 'Callback', @this.set_volume_trace_radius), ...
+                    gui.FloatingControl(this.f_mutables.h_electrode_radius, ...
                         [ 10; -350 ], [ [this.SLIDER_WIDTH, 1.0]; [0.0, 0.0] ]) ...
                         
                 ]...
@@ -369,9 +374,6 @@ classdef GUIController < handle
             this.prefs.lightangle = [];
             this.prefs.az = 45; %camera azimuth
             this.prefs.el = 10; %camera elevation
-        end
-        function set_volume_trace_radius(this, src, event, handles)
-            this.figure_controller.set_volume_trace_radius(src.Value);
         end
         function save_session(this, src, event, handles)
             folder_name = uigetdir('~/', 'Choose the location to save file to');

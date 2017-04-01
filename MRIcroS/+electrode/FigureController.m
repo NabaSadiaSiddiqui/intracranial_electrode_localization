@@ -71,7 +71,7 @@ classdef FigureController < handle
                 if isa(varargin{1}, 'matlab.graphics.eventdata.Hit')
                     % mark electrode
                     hit = varargin{1};
-                    centroid = this.geometry_controller.marker_by_point(hit.IntersectionPoint);
+                    centroid = this.geometry_controller.marker_by_point(hit.IntersectionPoint, this.gui_controller.get_volume_trace_radius());
                     if ~isempty(centroid)
                         % disp('FACE HIT');
                         this.gui_controller.mark(centroid, true); % modify Grid model
