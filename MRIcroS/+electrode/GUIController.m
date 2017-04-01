@@ -420,8 +420,9 @@ classdef GUIController < handle
             end
         end
         function set_color(this, src, event)
-            rgb = uisetcolor();
-            disp(rgb);
+            color = uisetcolor();
+            curr_grid = this.grid_controller.get_grid(this.get_current_grid());
+            curr_grid.change_color(color);
         end
     end
     methods(Access = protected, Static)
