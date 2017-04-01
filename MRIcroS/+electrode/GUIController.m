@@ -35,13 +35,13 @@ classdef GUIController < handle
             
             obj.figure_controller = electrode.FigureController(obj, hFigure, hAxes, varargin{:});
             
-            set(hFigure, 'ResizeFcn', @(~, ~) obj.reposition_all());
+            set(hFigure, 'ResizeFcn', @(src, ~) obj.reposition_all(src.Position(3:4)));
             set(hFigure, 'KeyPressFcn', @obj.keypress_handler);
              % crucial to make GUI (including figures) before passing to FigureController
             
             %display results
             obj.add_default_grid();
-            obj.reposition_all();
+            obj.reposition_all(obj.SZ);
             obj.figure_controller.redraw();
             obj.figure_controller.view(obj.DEFAULT_AZ_EL(1), obj.DEFAULT_AZ_EL(2));
             
@@ -190,10 +190,12 @@ classdef GUIController < handle
                     set(this.indicators{C(1), C(2)}, 'FaceColor', 'cyan');
                     set(this.ghost_indicator, 'Visible', 'off');
                     set(this.f_mutables.h_unmark_button, 'Visible', 'on');
+                    set(this.f_mutables.h_toggle_enable, 'Value', ~this.grid_controller.get_selected_marker().enabled);
                 else
                     % ghost-select unmarked spaces
                     set(this.ghost_indicator, 'Position', [ C - ones(size(C)), 1.0, 1.0 ] );
                     set(this.ghost_indicator, 'Visible', 'on');
+                    set(this.f_mutables.h_toggle_enable, 'Value', 0);
                 end
             end
         end
@@ -225,6 +227,8 @@ classdef GUIController < handle
                 % again, a view inconsistency will (and should really) 
                 % trigger an error
                 delete(this.indicators{C(1), C(2)});
+                set(this.ghost_indicator, 'Position', [ C - ones(size(C)), 1.0, 1.0 ]);
+                set(this.ghost_indicator, 'Visible', 'on');
             end
             this.indicators{C(1), C(2)} = [];
             set(this.f_mutables.h_unmark_button, 'Visible', 'Off');
@@ -248,9 +252,9 @@ classdef GUIController < handle
                 size(this.indicators)...
             ); % take the min of grid dims and actual filled indicators to save some time
         end
-        function reposition_all(this)
-            this.f_mutables.fAxes.reposition(this.SZ.');
-            this.f_mutables.f_gui_root.reposition(this.SZ.');
+        function reposition_all(this, sz)
+            this.f_mutables.fAxes.reposition(sz.');
+            this.f_mutables.f_gui_root.reposition(sz.');
         end
         function [ hFigure, hAxes ] = make_gui_sub(this)
             screensize = get(0,'ScreenSize');
@@ -276,7 +280,8 @@ classdef GUIController < handle
                 @(src, ev) this.select([ this.f_mutables.h_electrode_x.Value, this.f_mutables.h_electrode_y.Value ]));
             this.f_mutables.h_electrode_y = uicontrol('style', 'popup', 'Callback', ...
                 @(src, ev) this.select([ this.f_mutables.h_electrode_x.Value, this.f_mutables.h_electrode_y.Value ]));
-
+            this.f_mutables.h_toggle_enable = uicontrol('style', 'checkbox', 'Callback', @(src, ~) this.grid_controller.toggle_selected(~src.Value));
+            
             set(this.f_mutables.h_electrode_x, 'string', 1:this.GRID_DEFAULT(1));
             set(this.f_mutables.h_electrode_y, 'string', 1:this.GRID_DEFAULT(2));
             this.f_mutables.fAxes = gui.FloatingControl(axes('HandleVisibility', 'on', 'Parent', hFigure),...
@@ -323,7 +328,7 @@ classdef GUIController < handle
                             gui.FloatingControl(this.f_mutables.h_unmark_button, ...
                                 [ 0; 1.0], [[ 0, 1.0 ]; [ this.INPUT_HEIGHT, 0 ]])...
                         ]), ...
-                    gui.FloatingControl(uicontrol('style', 'checkbox', 'Callback', @this.grid_controller.disable_current), ...
+                    gui.FloatingControl(this.f_mutables.h_toggle_enable, ...
                         [ 10; -290 ], [ 15; this.LABEL_HEIGHT ]), ...
                     gui.FloatingControl(uicontrol('style', 'text', 'string', 'Disable electrode', 'HorizontalAlignment', 'Left'), ...
                         [ 30; -290 ], [[ 0, 1.0 ]; [ this.LABEL_HEIGHT, 0.0 ]])...
@@ -373,26 +378,27 @@ classdef GUIController < handle
         function load_session(this, ~, ~)
             [filename, pathname, ~] = uigetfile('~/', 'Select saved session file');
             fqn = [pathname, filename];
-            if exist(fqn, 'file') == 2
+            if ~any(isnumeric(fqn)) && exist(fqn, 'file') == 2
                 contents = load(fqn);
                 grids = contents.grids;
-                this.grid_controller.add_grids(grids);
                 names = cell(length(grids), 1);
                 num_grids = this.grid_controller.get_num_grids();
                 for i = 1:length(grids)
+                    % can't be lazy with stripped-down save .mat, replay
+                    % the interactions
                     names{i} = grids{i}.name;
-                    % be lazy and only modify the view for the markers
-                    grid = this.grid_controller.get_grid(i + num_grids - length(grids));
-                    for j = 1:size(grids{i}.markers, 1)
-                        for k = 1:size(grids{i}.markers, 2)
-                            if ~isempty(grids{i}.markers{j, k})
-                                marker = grids{i}.markers{j, k};
+                    this.grid_controller.add_empty_grid(grids{i}.name, grids{i}.dims(1), grids{i}.dims(2));
+                    grid = this.grid_controller.get_grid(i + num_grids);
+                    for j = 1:size(grids{i}.markers_skinned, 1)
+                        for k = 1:size(grids{i}.markers_skinned, 2)
+                            if ~isempty(grids{i}.markers_skinned{j, k})
+                                marker = grids{i}.markers_skinned{j, k};
                                 grid.mark(marker.centroid, [j, k], marker.enabled);
                             end
                         end
                     end
                 end
-                this.f_mutables.h_grid_dropdown.String = horzcat(...
+                this.f_mutables.h_grid_dropdown.String = vertcat(...
                     this.f_mutables.h_grid_dropdown.String, ...
                     names ...
                 );

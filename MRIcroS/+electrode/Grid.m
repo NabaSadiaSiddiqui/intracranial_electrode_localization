@@ -30,6 +30,10 @@ classdef Grid < handle
             selected = this.selected;
         end
         
+        function marker = get_local_selected_marker(this)
+            marker = this.markers{this.selected(1), this.selected(2)};
+        end
+        
         function coords = get_marked_coords(this)
             coords = {};
             for i = 1:size(this.markers, 1)
@@ -44,11 +48,30 @@ classdef Grid < handle
         function selected = unselect_local_selected(this)
             selected = this.selected;
             if ~any(isnan(this.selected))
-                if this.has_marker(this.selected)
+                if this.has_enabled_marker(this.selected)
                     this.unselect(this.selected);
                 end
             end
             % else % no-op
+        end
+        
+        function selected = toggle_local_selected(this, is_enabled)
+            selected = this.selected;
+            if ~any(isnan(selected))
+%                 if this.has_enabled_marker(selected) ...
+%                         && ~is_enabled % sanity check -- should always be toggling to disable
+%                     this.unmark(selected);
+%                 end
+                if is_enabled
+                    this.markers{selected(1), selected(2)} = [];
+                else
+                    this.markers{selected(1), selected(2)} = struct(...
+                        'centroid', [],...
+                        'marker', [],...
+                        'enabled', false...
+                    );
+                end
+            end
         end
         
         % [OBS] Purely view manipulations: do not talk to model
@@ -56,66 +79,66 @@ classdef Grid < handle
         % manipulating the this.markers modifies the model necessarily.
         % This is sort of a model class.
         function mark(this, centroid, C, enabled)
-            if this.has_marker(C)
+            if this.has_enabled_marker(C)
                 delete(this.markers{C(1), C(2)}.marker);
             end
-            
-            [X, Y, Z] = sphere();
-            X = X * this.MARKER_RAD + centroid(1);
-            Y = Y * this.MARKER_RAD + centroid(2);
-            Z = Z * this.MARKER_RAD + centroid(3);
-            % use marker_rad directly -- figure should be scaled to 1mm
-            % cubic vox at loading time
-            pMarker = surf2patch(X, Y, Z);
-            hMarker = patch('vertices', pMarker.vertices,...
-                'faces', pMarker.faces, 'facealpha',1.0,...
-                'facecolor','red','facelighting','phong',...
-                'edgecolor','red', 'ButtonDownFcn', { @this.marker_button_down, C });
-            % hLabel = text(centroid(1), centroid(2), centroid(3), ['(', C(1), ',', C(2), ')']);
-            
-            this.markers{C(1), C(2)} = ...
-                struct(...
-                    'centroid', centroid,...
-                    'marker', hMarker,...
-                    % 'label', hLabel,...
-                    'enabled', enabled...
-            );
-        
-%             this.select(C); % don't select here: have the parent select
-%             during its logic
-            
-            % reposition linkages
-            linkages = this.get_active_linkages(C);
-            for i = 1:length(linkages(1, :))
-                if ~isempty(linkages{1, i})
-                    % horizontal linkages
-                    linkage_idx = linkages{1, i}.linkage;
-                    target = linkages{1, i}.marker;
-                    h_cylinder = this.cylinder_to_linkage(...
-                        centroid, this.markers{target(1), target(2)}.centroid, 1.0);
-                    
-                    if all(linkage_idx <= size(this.h_linkages)) && ~isempty(this.h_linkages{linkage_idx(1), linkage_idx(2)})
-                        delete(this.h_linkages{linkage_idx(1), linkage_idx(2)});
+            if ~(this.has_marker(C) && ~this.markers{C(1), C(2)}.enabled)
+                [X, Y, Z] = sphere();
+                X = X * this.MARKER_RAD + centroid(1);
+                Y = Y * this.MARKER_RAD + centroid(2);
+                Z = Z * this.MARKER_RAD + centroid(3);
+                % use marker_rad directly -- figure should be scaled to 1mm
+                % cubic vox at loading time
+                pMarker = surf2patch(X, Y, Z);
+                hMarker = patch('vertices', pMarker.vertices,...
+                    'faces', pMarker.faces, 'facealpha',1.0,...
+                    'facecolor','red','facelighting','phong',...
+                    'edgecolor','red', 'ButtonDownFcn', { @this.marker_button_down, C });
+                % hLabel = text(centroid(1), centroid(2), centroid(3), ['(', C(1), ',', C(2), ')']);
+
+                this.markers{C(1), C(2)} = ...
+                    struct(...
+                        'centroid', centroid,...
+                        'marker', hMarker,...
+                        'enabled', enabled...
+                );
+
+    %             this.select(C); % don't select here: have the parent select
+    %             during its logic
+
+                % reposition linkages
+                linkages = this.get_active_linkages(C);
+                for i = 1:length(linkages(1, :))
+                    if ~isempty(linkages{1, i})
+                        % horizontal linkages
+                        linkage_idx = linkages{1, i}.linkage;
+                        target = linkages{1, i}.marker;
+                        h_cylinder = this.cylinder_to_linkage(...
+                            centroid, this.markers{target(1), target(2)}.centroid, 1.0);
+
+                        if all(linkage_idx <= size(this.h_linkages)) && ~isempty(this.h_linkages{linkage_idx(1), linkage_idx(2)})
+                            delete(this.h_linkages{linkage_idx(1), linkage_idx(2)});
+                        end
+                        this.h_linkages{linkage_idx(1), linkage_idx(2)} = h_cylinder;
+                    else
+                        break
                     end
-                    this.h_linkages{linkage_idx(1), linkage_idx(2)} = h_cylinder;
-                else
-                    break
                 end
-            end
-            for i = 1:length(linkages(2, :))
-                if ~isempty(linkages{2, i})
-                    % vertical linkages
-                    linkage_idx = linkages{2, i}.linkage;
-                    target = linkages{2, i}.marker;
-                    h_cylinder = this.cylinder_to_linkage(...
-                        centroid, this.markers{target(1), target(2)}.centroid, 1.0);
-                    
-                    if all(linkage_idx <= size(this.v_linkages)) && ~isempty(this.v_linkages{linkage_idx(1), linkage_idx(2)})
-                        delete(this.v_linkages{linkage_idx(1), linkage_idx(2)});
+                for i = 1:length(linkages(2, :))
+                    if ~isempty(linkages{2, i})
+                        % vertical linkages
+                        linkage_idx = linkages{2, i}.linkage;
+                        target = linkages{2, i}.marker;
+                        h_cylinder = this.cylinder_to_linkage(...
+                            centroid, this.markers{target(1), target(2)}.centroid, 1.0);
+
+                        if all(linkage_idx <= size(this.v_linkages)) && ~isempty(this.v_linkages{linkage_idx(1), linkage_idx(2)})
+                            delete(this.v_linkages{linkage_idx(1), linkage_idx(2)});
+                        end
+                        this.v_linkages{linkage_idx(1), linkage_idx(2)} = h_cylinder;
+                    else
+                        break
                     end
-                    this.v_linkages{linkage_idx(1), linkage_idx(2)} = h_cylinder;
-                else
-                    break
                 end
             end
         end
@@ -151,7 +174,7 @@ classdef Grid < handle
             dims = size(this.markers);
             for i = 1:dims(1)
                 for j = 1:dims(2)
-                    if this.has_marker([i, j])
+                    if this.has_enabled_marker([i, j])
                         delete(this.markers{i, j}.marker);
                         % delete(this.markers{i, j}.label);
                         this.markers{i, j} = [];
@@ -168,14 +191,14 @@ classdef Grid < handle
             end
         end
         function select(this, C)
-            assert(this.has_marker(C), 'Tried to select an invalid or deleted marker.');
+            assert(this.has_enabled_marker(C), 'Tried to select an invalid or deleted marker.');
             
             set(this.markers{C(1), C(2)}.marker, { 'FaceColor', 'EdgeColor' }, { 'cyan', 'cyan' });
         end
         function unselect(this, C)
             % on the fence if this should be so strong as to assert marker
             % existence
-            assert(this.has_marker(C), 'Grid::select', 'Tried to unselect an invalid or deleted marker.');
+            assert(this.has_enabled_marker(C), 'Grid::select', 'Tried to unselect an invalid or deleted marker.');
             
             set(this.markers{C(1), C(2)}.marker, { 'FaceColor', 'EdgeColor' }, { 'red', 'red' });
         end
@@ -183,7 +206,7 @@ classdef Grid < handle
             dims = size(this.markers);
             for i = 1:dims(1)
                 for j = 1:dims(2)
-                    if this.has_marker(i, j)
+                    if this.has_enabled_marker(i, j)
                         set(this.markers{i, j}, ...
                             { 'FaceColor', 'EdgeColor' }, { 'red', 'red' });
                     end
@@ -194,8 +217,8 @@ classdef Grid < handle
             dims = size(this.markers);
             for i = 1:dims(1)
                 for j = 1:dims(2)
-                    if this.has_marker(i, j)
-                        set(this.markers{i, j}, 'Visible', 'off');
+                    if this.has_enabled_marker(i, j)
+                        set(this.markers{i, j}.marker, 'Visible', 'off');
                     end
                     if all(size(this.h_linkages) <= [i, j]) && ~isempty(this.h_linkages{i, j})
                         set(this.h_linkages{i, j}, 'Visible', 'off');
@@ -208,6 +231,9 @@ classdef Grid < handle
         end
         function maybe = has_marker(this, C)
             maybe = all(C <= size(this.markers)) && ~isempty(this.markers{C(1), C(2)});
+        end
+        function maybe = has_enabled_marker(this, C)
+            maybe = this.has_marker(C) && this.markers{C(1), C(2)}.enabled;
         end
     end
     

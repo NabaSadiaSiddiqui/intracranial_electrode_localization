@@ -32,29 +32,35 @@ classdef GridController < handle
         function grid = get_grid(this, idx)
             grid = this.grids{idx};
         end
+        function marker = get_selected_marker(this)
+            idx = this.get_current_grid();
+            marker = this.grids{idx}.get_local_selected_marker();
+        end
         function grids_skinned = get_grids(this)
-            grids_skinned = {};
+            grids_skinned = cell(length(this.grids), 1);
             i = 1;
             for grid = this.grids
                 grid_ = grid{1,1};
                 markers = grid_.markers;
-                markers_skinned = {};
-                j = 1;
-                for marker = markers
-                    marker_ = marker{1,1};
-                    marker_skinned = struct(...
-                        'centroid', marker_.centroid,...
-                        'enabled', marker_.enabled...
-                        );
-                    markers_skinned{1, j} = marker_skinned;
-                    j = j+1;
+                markers_skinned = cell(size(grid_));
+                for j = 1:size(markers, 1)
+                    for k = 1:size(markers, 2)
+                        marker_ = markers{j, k};
+                        if ~isempty(marker_)
+                            marker_skinned = struct(...
+                                'centroid', marker_.centroid,...
+                                'enabled', marker_.enabled...
+                                );
+                            markers_skinned{j, k} = marker_skinned;
+                        end
+                    end
                 end
-                grid_skinned = struct(...
-                        'name', grid_.name,...
-                        'dims', grid_.dims,...
-                        'markers', markers_skinned...
-                        );
-                grids_skinned{1, i} = grid_skinned;
+                grid_skinned = electrode.SkinnedGrid(...
+                        grid_.name,...
+                        grid_.dims,...
+                        markers_skinned...
+                );
+                grids_skinned{i} = grid_skinned;
                 i = i+1;
             end
         end
@@ -99,10 +105,9 @@ classdef GridController < handle
             dims = this.get_current_dims();
             idx = this.get_current_grid();
             if all(1 <= C & C <= dims)
-                if this.grids{idx}.has_marker(C)
+                exists = this.grids{idx}.has_marker(C); % existence, not enabled
+                if this.grids{idx}.has_enabled_marker(C)
                     this.grids{idx}.unmark(C);
-                    
-                    exists = true;
                 end
             end
         end
@@ -114,7 +119,7 @@ classdef GridController < handle
             idx = this.get_current_grid();
             if all(1 <= C & C <= dims)
                 this.unselect_last_selected();
-                if this.grids{idx}.has_marker(C)
+                if this.grids{idx}.has_enabled_marker(C)
                     this.grids{idx}.select(C);
                     
                     exists = true;
@@ -130,6 +135,12 @@ classdef GridController < handle
             idx = this.get_current_grid();
             selected = this.grids{idx}.unselect_local_selected();
             this.gui_controller.unselect(selected); % eh.
+        end
+        function toggle_selected(this, v)
+            idx = this.get_current_grid();
+            selected = this.grids{idx}.get_local_selected();
+            this.gui_controller.unmark(selected); % ehhhhhh
+            this.grids{idx}.toggle_local_selected(v);
         end
     end
     methods(Access = protected)
