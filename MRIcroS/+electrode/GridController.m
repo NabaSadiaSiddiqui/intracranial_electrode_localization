@@ -32,8 +32,31 @@ classdef GridController < handle
         function grid = get_grid(this, idx)
             grid = this.grids{idx};
         end
-        function grids = get_grids(this)
-            grids = this.grids;
+        function grids_skinned = get_grids(this)
+            grids_skinned = {};
+            i = 1;
+            for grid = this.grids
+                grid_ = grid{1,1};
+                markers = grid_.markers;
+                markers_skinned = {};
+                j = 1;
+                for marker = markers
+                    marker_ = marker{1,1};
+                    marker_skinned = struct(...
+                        'centroid', marker_.centroid,...
+                        'enabled', marker_.enabled...
+                        );
+                    markers_skinned{1, j} = marker_skinned;
+                    j = j+1;
+                end
+                grid_skinned = struct(...
+                        'name', grid_.name,...
+                        'dims', grid_.dims,...
+                        'markers', markers_skinned...
+                        );
+                grids_skinned{1, i} = grid_skinned;
+                i = i+1;
+            end
         end
         % Mutators
         function add_empty_grid(this, name, width, height)
