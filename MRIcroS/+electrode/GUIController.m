@@ -31,6 +31,7 @@ classdef GUIController < handle
             
             [ hFigure, hAxes ] = obj.make_gui_sub();
             obj.prefs_sub();
+            obj.make_menus_sub(hFigure);
             
             obj.figure_controller = electrode.FigureController(obj, hFigure, hAxes, filename, varargin{:});
             
@@ -321,48 +322,9 @@ classdef GUIController < handle
             xlim(this.f_mutables.ax_grid, [0, this.GRID_DEFAULT(1)]);
             ylim(this.f_mutables.ax_grid, [0, this.GRID_DEFAULT(2)]);
         end
-        function make_menus_sub(this)
-            showOpts = 1;
-            %menus...
-            % 'Parent',this.h_menus.hMainFigure,
-            this.h_menus.hFileMenu = uimenu('Handlethis.h_menus.sibility','callback','Label','File');
-            this.h_menus.hAddLayerMenu = uimenu('Parent',this.h_menus.hFileMenu,'Label','Add layer','Handlethis.h_menus.sibility','callback', ...
-                'Callback', utils.curry(@gui.AddLayer_Callback, ~showOpts));
-            this.h_menus.hAddTracksMenu = uimenu('Parent',this.h_menus.hFileMenu,'Label','Add tracks','Handlethis.h_menus.sibility','callback','Callback', @gui.AddTracks_Callback);
-            
-            % 'Parent',this.h_menus.hMainFigure,
-            this.h_menus.hFunctionMenu = uimenu('Handlethis.h_menus.sibility','callback','Label','Functions');
-            this.h_menus.hChangeBgColorMenu = uimenu('Parent',this.h_menus.hFunctionMenu, 'Label', 'Change Background Color', 'Handlethis.h_menus.sibility', 'callback', 'Callback', @gui.ChangeBgColor_Callback);
-            
-            % this.h_menus.hAddLayerWithOptsMenu = uimenu('Parent',this.h_menus.hFileMenu,'Label','Add layer with options','Handlethis.h_menus.sibility','callback', ...
-            %     'Callback', utils.curry(@gui.AddLayer_Callback, showOpts));
-            % this.h_menus.hCloseLayersMenu = uimenu('Parent',this.h_menus.hFileMenu,'Label','Close layer(s)','Handlethis.h_menus.sibility','callback', 'Callback', @gui.CloseLayers_Callback);
-            % this.h_menus.hCloseTracksMenu = uimenu('Parent',this.h_menus.hFileMenu, 'Label','Close tracks', 'Handlethis.h_menus.sibility', 'callback','Callback', @gui.CloseTracks_Callback);
-            % this.h_menus.hAddNodesMenu = uimenu('Parent',this.h_menus.hFileMenu, 'Label','Add Nodes', 'Handlethis.h_menus.sibility', 'callback', ...
-            %     'Callback', utils.curry(@gui.AddNodes_Callback, ~showOpts));
-            % this.h_menus.hAddNodesWithOptsMenu = uimenu('Parent',this.h_menus.hFileMenu, 'Label','Add Nodes with options', 'Handlethis.h_menus.sibility', 'callback',...
-            %     'Callback', utils.curry(@gui.AddNodes_Callback, showOpts));
-            % this.h_menus.hSathis.h_menus.BmpMenu = uimenu('Parent',this.h_menus.hFileMenu,'Label','Sathis.h_menus. bitmap','Handlethis.h_menus.sibility','callback', 'Callback', @gui.Sathis.h_menus.BmpMenu_Callback);
-            % this.h_menus.hSathis.h_menus.MeshesMenu = uimenu('Parent',this.h_menus.hFileMenu,'Label','Sathis.h_menus. mesh(es)','Handlethis.h_menus.sibility','callback', 'Callback', @gui.Sathis.h_menus.MeshesMenu_Callback);
-            % this.h_menus.closeAllItemsMenu = uimenu('Parent',this.h_menus.hFileMenu, 'Label','Close All Items', 'Handlethis.h_menus.sibility', 'callback','Callback', @gui.CloseAllItems_Callback);
-            % this.h_menus.hEditMenu = uimenu('Parent',this.h_menus.hMainFigure,'Handlethis.h_menus.sibility','callback','Label','Edit');
-            % this.h_menus.hCopyToClipboardMenu = uimenu('Parent',this.h_menus.hEditMenu,'Label','Copy To Clipboard','Handlethis.h_menus.sibility','callback','Callback', @gui.CopyToClipboardMenu_Callback);
-            % this.h_menus.hToolbarMenu = uimenu('Parent',this.h_menus.hFunctionMenu,'Label','Show/hide toolbar','Handlethis.h_menus.sibility','callback','Callback', @gui.ToolbarMenu_Callback);
-            % this.h_menus.hLayerRgbaMenu = uimenu('Parent',this.h_menus.hFunctionMenu,'Label','Color and transparency','Handlethis.h_menus.sibility','callback','Callback', @gui.LayerRGBA_Callback);
-            % this.h_menus.hShowWireFrameMenu = uimenu('Parent',this.h_menus.hFunctionMenu,'Label','Show Wireframe','Handlethis.h_menus.sibility',...
-            %     'callback','Callback', utils.curry(@gui.ShowWireframe_Callback, ~showOpts));
-            % this.h_menus.hShowWireFrameWithOptsMenu = uimenu('Parent',this.h_menus.hFunctionMenu,'Label','Show Wireframe with options','Handlethis.h_menus.sibility',...
-            %     'callback','Callback', utils.curry(@gui.ShowWireframe_Callback, showOpts));
-            % this.h_menus.hCloseWireFrameMenu = uimenu('Parent',this.h_menus.hFunctionMenu,'Label','Hide Wireframe','Handlethis.h_menus.sibility','callback','Callback',@gui.HideWireframe_Callback);
-            % this.h_menus.hMaterialOptionsMenu = uimenu('Parent',this.h_menus.hFunctionMenu,'Label','Surface material and lighting','Handlethis.h_menus.sibility','callback','Callback', @gui.MaterialOptionsMenu_Callback);
-            % this.h_menus.hSimplifyMeshesMenu = uimenu('Parent',this.h_menus.hFunctionMenu,'Label','Simplify mesh(es)','Handlethis.h_menus.sibility','callback','Callback', @gui.SimplifyMeshesMenu_Callback);
-            % this.h_menus.hRotateToggleMenu = uimenu('Parent',this.h_menus.hFunctionMenu,'Label','Rotate','Handlethis.h_menus.sibility', 'callback', 'Callback', utils.curry(@gui.RotateToggle_Callback, ~showOpts));
-            % this.h_menus.hRotateToggleWithOptionsMenu = uimenu('Parent',this.h_menus.hFunctionMenu,'Label','Rotate With Options','Handlethis.h_menus.sibility', 'callback', 'Callback', utils.curry(@gui.RotateToggle_Callback, showOpts));
-            % this.h_menus.hProjectthis.h_menus.lumeMenu = uimenu('Parent',this.h_menus.hFunctionMenu, 'Label', 'Project this.h_menus.lume onto Surface', 'Handlethis.h_menus.sibility', 'callback', 'Callback', utils.curry(@gui.Projectthis.h_menus.lume_Callback));
-            % this.h_menus.hCloseProjectionsMenu = uimenu('Parent',this.h_menus.hFunctionMenu, 'Label', 'Close Projected this.h_menus.lumes', 'Handlethis.h_menus.sibility', 'callback', 'Callback', @gui.CloseProjections_Callback);
-            % this.h_menus.this.h_menus.ewHistoryMenu = uimenu('Parent',this.h_menus.hFunctionMenu, 'Label', 'Echo instructions to command window', 'Handlethis.h_menus.sibility', 'callback', 'Callback', @gui.EchoHistory_Callback);
-            % this.h_menus.hHelpMenu = uimenu('Parent',this.h_menus.hMainFigure,'Handlethis.h_menus.sibility','callback','Label','Help');
-            % this.h_menus.hAboutMenu = uimenu('Parent',this.h_menus.hHelpMenu,'Label','About','Handlethis.h_menus.sibility','callback','Callback', @gui.AboutMenu_Callback);
+        function make_menus_sub(this, h_menus)
+            h_menu_file = uimenu(h_menus,'Label','File');
+            uimenu(h_menu_file, 'Label', 'Save', 'callback', {@this.save_session});
         end
         function prefs_sub(this)
             this.prefs.colors = [0.7 0.7 0.9 1.0; 1 0 0 1.0; 0 1 0 0.7; 0 0 1 0.7; 0.5 0.5 0 0.7; 0.5 0 0.5 0.7; 0 0.5 0.5 0.7]; %rgba for each layer CRZ
@@ -378,6 +340,17 @@ classdef GUIController < handle
             this.prefs.lightangle = [];
             this.prefs.az = 45; %camera azimuth
             this.prefs.el = 10; %camera elevation
+        end
+        function save_session(this, src, event, handles)
+            folder_name = uigetdir('~/', 'Choose the location to save file to');
+            if folder_name ~= 0
+                filename = strcat(folder_name, '/', 'result.mat');
+                grids = this.grid_controller.get_grids();
+                save(filename, 'grids');
+                msg = strcat('Work from current session has been saved to ', filename);
+                title = 'Save';
+                msgbox(msg, title)
+            end
         end
     end
     methods(Access = protected, Static)

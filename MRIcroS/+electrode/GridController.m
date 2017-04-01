@@ -32,6 +32,9 @@ classdef GridController < handle
         function grid = get_grid(this, idx)
             grid = this.grids{idx};
         end
+        function grids = get_grids(this)
+            grids = this.grids;
+        end
         % Mutators
         function add_grid(this, name, width, height)
 %             this.unselect_last_selected();
