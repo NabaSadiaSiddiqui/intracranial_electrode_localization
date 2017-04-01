@@ -36,9 +36,12 @@ classdef GridController < handle
             grids = this.grids;
         end
         % Mutators
-        function add_grid(this, name, width, height)
+        function add_empty_grid(this, name, width, height)
 %             this.unselect_last_selected();
             this.grids{length(this.grids) + 1} = electrode.Grid(name, width, height);
+        end
+        function add_grids(this, grids)
+            this.grids = horzcat(this.grids, grids);
         end
         function update_grid_dims(this, dims)
             idx = this.get_current_grid();

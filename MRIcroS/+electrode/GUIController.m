@@ -97,7 +97,7 @@ classdef GUIController < handle
         end
         function add_default_grid(this)
             % mutate model
-            this.grid_controller.add_grid(this.NAME_DEFAULT, this.GRID_DEFAULT(1),  this.GRID_DEFAULT(2)); % mutate model
+            this.grid_controller.add_empty_grid(this.NAME_DEFAULT, this.GRID_DEFAULT(1), this.GRID_DEFAULT(2)); % mutate model
             this.f_mutables.h_grid_dropdown.String{length(this.f_mutables.h_grid_dropdown.String) + 1} = this.NAME_DEFAULT;
             this.switch_grid(length(this.f_mutables.h_grid_dropdown.String));
         end
@@ -342,6 +342,7 @@ classdef GUIController < handle
         function make_menus_sub(this, h_menus)
             h_menu_file = uimenu(h_menus,'Label','File');
             uimenu(h_menu_file, 'Label', 'Save', 'callback', {@this.save_session});
+            uimenu(h_menu_file, 'Label', 'Load', 'callback', {@this.load_session});
         end
         function prefs_sub(this)
             this.prefs.colors = [0.7 0.7 0.9 1.0; 1 0 0 1.0; 0 1 0 0.7; 0 0 1 0.7; 0.5 0.5 0 0.7; 0.5 0 0.5 0.7; 0 0.5 0.5 0.7]; %rgba for each layer CRZ
@@ -367,6 +368,37 @@ classdef GUIController < handle
                 msg = strcat('Work from current session has been saved to ', filename);
                 title = 'Save';
                 msgbox(msg, title)
+            end
+        end
+        function load_session(this, ~, ~)
+            [filename, pathname, ~] = uigetfile('~/', 'Select saved session file');
+            fqn = [pathname, filename];
+            if exist(fqn, 'file') == 2
+                contents = load(fqn);
+                grids = contents.grids;
+                this.grid_controller.add_grids(grids);
+                names = cell(length(grids), 1);
+                num_grids = this.grid_controller.get_num_grids();
+                for i = 1:length(grids)
+                    names{i} = grids{i}.name;
+                    % be lazy and only modify the view for the markers
+                    grid = this.grid_controller.get_grid(i + num_grids - length(grids));
+                    for j = 1:size(grids{i}.markers, 1)
+                        for k = 1:size(grids{i}.markers, 2)
+                            if ~isempty(grids{i}.markers{j, k})
+                                marker = grids{i}.markers{j, k};
+                                grid.mark(marker.centroid, [j, k], marker.enabled);
+                            end
+                        end
+                    end
+                end
+                this.f_mutables.h_grid_dropdown.String = horzcat(...
+                    this.f_mutables.h_grid_dropdown.String, ...
+                    names ...
+                );
+                
+            else
+                
             end
         end
     end

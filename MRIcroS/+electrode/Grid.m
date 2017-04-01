@@ -71,11 +71,13 @@ classdef Grid < handle
                 'faces', pMarker.faces, 'facealpha',1.0,...
                 'facecolor','red','facelighting','phong',...
                 'edgecolor','red', 'ButtonDownFcn', { @this.marker_button_down, C });
+            % hLabel = text(centroid(1), centroid(2), centroid(3), ['(', C(1), ',', C(2), ')']);
             
             this.markers{C(1), C(2)} = ...
                 struct(...
                     'centroid', centroid,...
                     'marker', hMarker,...
+                    % 'label', hLabel,...
                     'enabled', enabled...
             );
         
@@ -119,6 +121,7 @@ classdef Grid < handle
         end
         function unmark(this, C)
             delete(this.markers{C(1), C(2)}.marker);
+            % delete(this.markers{C(1), C(2)}.label);
             this.markers{C(1), C(2)} = [];
 
             % delete active linkages around this marker
@@ -150,6 +153,7 @@ classdef Grid < handle
                 for j = 1:dims(2)
                     if this.has_marker([i, j])
                         delete(this.markers{i, j}.marker);
+                        % delete(this.markers{i, j}.label);
                         this.markers{i, j} = [];
                     end
                     if all(size(this.h_linkages) >= [i, j]) && ~isempty(this.h_linkages{i, j})
