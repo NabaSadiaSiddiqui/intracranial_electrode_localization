@@ -39,6 +39,9 @@ classdef FigureController < handle
         function redraw(this)
             this.geometry_controller.redraw(this.hAxes);
         end
+        function set_volume_trace_radius(this, radius)
+            this.geometry_controller.set_volume_trace_radius(radius)
+        end
     end
     
     methods(Access = protected)

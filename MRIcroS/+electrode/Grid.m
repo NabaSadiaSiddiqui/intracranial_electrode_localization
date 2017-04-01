@@ -122,6 +122,7 @@ classdef Grid < handle
                         this.h_linkages{linkage_idx(1), linkage_idx(2)} = h_cylinder;
                     else
                         break
+
                     end
                 end
                 for i = 1:length(linkages(2, :))
